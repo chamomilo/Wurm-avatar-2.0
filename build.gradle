@@ -1,0 +1,169 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.avatar2'
+version = '0.2.0'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+def clientLibraries = [
+        'libs/client-patched.jar',
+        'libs/common.jar',
+        'libs/javassist.jar',
+        'libs/modlauncher.jar'
+]
+def wurmJavaFx = file('C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/runtime/lib/ext/jfxrt.jar')
+clientLibraries.each { library ->
+    if (!file(library).isFile()) {
+        throw new GradleException("Required pinned client library is missing: ${library}")
+    }
+}
+
+repositories { mavenCentral() }
+
+dependencies {
+    compileOnly files(clientLibraries)
+    testImplementation files(clientLibraries)
+    testImplementation files('libs/junit-4.13.2.jar', 'libs/hamcrest-core-1.3.jar')
+    if (wurmJavaFx.isFile()) testRuntimeOnly files(wurmJavaFx)
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    systemProperty 'avatar2ProjectDir', projectDir.absolutePath
+    systemProperty 'sun.net.http.allowRestrictedHeaders', 'true'
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+task sourceDist(type: Zip) {
+    archiveFileName = "avatar2-sources-${project.version}.zip"
+    destinationDirectory = file("${buildDir}/distributions")
+    from(projectDir) {
+        include 'src/**', 'docs/**', 'config/**', 'mods/avatar2.properties',
+                'tools/animation-lab/*.py', 'tools/blender/*.py', 'tools/blender/scripts/*.py',
+                'tools/*.ps1', 'assets/metadata/**', 'assets/runtime/**', 'resource-pack/**',
+                'build.gradle', 'settings.gradle', 'gradle/**', 'gradlew', 'gradlew.bat',
+                'README.md', 'LICENSE', 'COPYING', 'NOTICE.md', '.gitignore'
+        exclude '**/__pycache__/**'
+    }
+}
+
+jar {
+    archiveFileName = "avatar2-${project.version}.jar"
+}
+
+task avatarResources(type: Jar) {
+    archiveFileName = "avatar2-resources-${project.version}.jar"
+    destinationDirectory = file("${buildDir}/resources-pack")
+    from('resource-pack')
+    into('avatar2/body') {
+        from('assets/runtime/body') {
+            include '**/*.dae', '**/*.png', 'body-manifest.json', 'properties.xml'
+        }
+    }
+}
+
+task verifyArtifact(dependsOn: jar) {
+    doLast {
+        def contents = zipTree(jar.archiveFile.get().asFile)
+        [
+                'org/avatar2/client/Avatar2Mod.class',
+                'org/avatar2/client/AvatarStudioController.class',
+                'org/avatar2/core/AvatarProfile.class',
+                'org/avatar2/core/MaterialReflection.class',
+                'org/avatar2/core/OutfitLayerRules.class',
+                'com/wurmonline/client/renderer/gui/AvatarStudioWindow.class',
+                'org/avatar2/lab/AnimationLab.class',
+                'org/avatar2/lab/dashboard.html',
+                'org/chamomilo/wurm/update/SharedUpdateCoordinator.class',
+                'org/chamomilo/wurm/update/UpdateTarget.class',
+                'org/chamomilo/wurm/update/GitHubReleaseClient.class',
+                'org/chamomilo/wurm/update/ModUpdate.class',
+                'org/chamomilo/wurm/update/ModCatalog.class',
+                'org/chamomilo/wurm/update/update-frame.png',
+                'com/wurmonline/client/resources/ChamomiloResourceUrl.class',
+                'com/wurmonline/client/renderer/gui/ChamomiloUpdateWindow.class'
+        ].each { requiredClass ->
+            if (contents.matching { include requiredClass }.files.empty) {
+                throw new GradleException("Avatar 2.0 artifact is missing ${requiredClass}")
+            }
+        }
+    }
+}
+
+task verifyModDescriptor(dependsOn: jar) {
+    doLast {
+        Properties descriptor = new Properties()
+        file('mods/avatar2.properties').withInputStream { descriptor.load(it) }
+        String expected = jar.archiveFile.get().asFile.name
+        if (descriptor.getProperty('classpath') != expected) {
+            throw new GradleException("Mod classpath must be relative to mods/avatar2: "
+                    + "expected ${expected}, got ${descriptor.getProperty('classpath')}")
+        }
+        [sharedClassLoader: 'true', updateProvider: 'chamomilo',
+         updateCoordinatorProtocol: '1', updateId: 'avatar2', updateName: 'Avatar 2.0',
+         updateRepo: 'chamomilo/Wurm-avatar-2.0', updateAsset: 'avatar2-{version}.zip',
+         version: project.version.toString()].each { key, value ->
+            if (descriptor.getProperty(key) != value)
+                throw new GradleException("Invalid shared updater metadata: ${key}")
+        }
+    }
+}
+
+task dist(type: Zip, dependsOn: ['test', 'verifyArtifact', 'verifyModDescriptor',
+                                 'avatarResources', 'verifyGeneratedBodies']) {
+    archiveFileName = "avatar2-${project.version}.zip"
+    destinationDirectory = file("${buildDir}/distributions")
+
+    into('mods/avatar2') {
+        from jar
+        from avatarResources
+        from 'README.md'
+        from 'LICENSE', 'COPYING', 'NOTICE.md'
+        from('docs') { into 'docs' }
+        from('tools/animation-lab') { include '*.py'; into 'animation-lab' }
+        from('config') { into 'config' }
+        from('assets/metadata') { into 'assets/metadata' }
+    }
+    into('mods') {
+        from 'mods/avatar2.properties'
+    }
+}
+
+build.dependsOn verifyArtifact
+
+task probeVanillaRig(type: JavaExec, dependsOn: classes) {
+    classpath = sourceSets.main.runtimeClasspath + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    main = 'org.avatar2.tools.WurmRigProbe'
+    def graphics = findProperty('wurmGraphicsJar') ?:
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/packs/graphics.jar'
+    args graphics,
+            'assets/source/wurm-vanilla/vanilla-rig-male.json',
+            'player/Male_1_04.wom'
+}
+
+task verifyGeneratedBodies(type: JavaExec, dependsOn: classes) {
+    classpath = sourceSets.main.runtimeClasspath + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    systemProperty 'wurmGraphicsJar', findProperty('wurmGraphicsJar') ?:
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/packs/graphics.jar'
+    main = 'org.avatar2.tools.DaeRigProbe'
+    args fileTree('assets/runtime/body') {
+        include '*.dae'
+    }.files.sort { it.name }.collect { it.absolutePath }
+}

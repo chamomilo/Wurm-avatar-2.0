@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "variants": [
+    {
+      "name": "male-athletic",
+      "vertices": 14444,
+      "triangles": 28796,
+      "joints": 54,
+      "skeleton": "makehuman-game-engine-native",
+      "meshes": [
+        "Avatar2BodyMesh",
+        "Avatar2EyesMesh"
+      ],
+      "bounds": {
+        "min": [
+          -0.56489098072052,
+          -0.37613800168037415,
+          1.7345882952213287e-08
+        ],
+        "max": [
+          0.56489098072052,
+          0.09297652542591095,
+          1.7291079759597778
+        ]
+      },
+      "dae": "C:\\projects\\Avatar 2.0\\assets\\runtime\\body\\male-athletic.dae"
+    },
+    {
+      "name": "male-bodybuilder",
+      "vertices": 14354,
+      "triangles": 28616,
+      "joints": 54,
+      "skeleton": "makehuman-game-engine-native",
+      "meshes": [
+        "Avatar2BodyMesh",
+        "Avatar2EyesMesh"
+      ],
+      "bounds": {
+        "min": [
+          -0.56489098072052,
+          -0.37613800168037415,
+          1.7345882952213287e-08
+        ],
+        "max": [
+          0.56489098072052,
+          0.0928870290517807,
+          1.7291079759597778
+        ]
+      },
+      "dae": "C:\\projects\\Avatar 2.0\\assets\\runtime\\body\\male-bodybuilder.dae"
+    },
+    {
+      "name": "female-athletic",
+      "vertices": 14444,
+      "triangles": 28796,
+      "joints": 54,
+      "skeleton": "makehuman-game-engine-native",
+      "meshes": [
+        "Avatar2BodyMesh",
+        "Avatar2EyesMesh"
+      ],
+      "bounds": {
+        "min": [
+          -0.48558491468429565,
+          -0.29255127906799316,
+          -1.6530975699424744e-08
+        ],
+        "max": [
+          0.48558491468429565,
+          0.08954506367444992,
+          1.5912296772003174
+        ]
+      },
+      "dae": "C:\\projects\\Avatar 2.0\\assets\\runtime\\body\\female-athletic.dae"
+    },
+    {
+      "name": "female-bodybuilder",
+      "vertices": 14578,
+      "triangles": 29064,
+      "joints": 54,
+      "skeleton": "makehuman-game-engine-native",
+      "meshes": [
+        "Avatar2BodyMesh",
+        "Avatar2EyesMesh"
+      ],
+      "bounds": {
+        "min": [
+          -0.48558491468429565,
+          -0.29255127906799316,
+          -1.6530975699424744e-08
+        ],
+        "max": [
+          0.48558491468429565,
+          0.09058014303445816,
+          1.5912296772003174
+        ]
+      },
+      "dae": "C:\\projects\\Avatar 2.0\\assets\\runtime\\body\\female-bodybuilder.dae"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Avatar 2.0 — Animation Lab</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#151a20;color:#e8edf2;font:15px system-ui}header{padding:16px 24px;background:#202831}h1{font-size:22px;margin:0 0 8px}main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px}section{background:#202831;border-radius:8px;padding:16px;margin-bottom:14px}label{display:block;margin:10px 0}input,select,button,textarea{font:inherit;color:inherit;background:#111820;border:1px solid #4e6275;border-radius:4px;padding:7px}select,textarea{width:100%}input[type=range]{width:240px;padding:0}button{cursor:pointer;margin:4px 4px 4px 0}button:hover{background:#35495b}small{color:#a9bbcc}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;max-height:250px;overflow:auto}canvas{width:100%;background:#151a20}img{max-width:100%;max-height:650px}#status{color:#92d4c3}#error{color:#ffaf9e}textarea{height:180px;font:12px monospace}.axis{display:flex;align-items:center;gap:8px}.axis output{width:52px}a{color:#92d4c3}@media(max-width:800px){main{grid-template-columns:1fr}}
+</style>
+<header><h1>Avatar 2.0 · Animation Lab</h1><div id="status">Подключение…</div><div id="error"></div></header>
+<main><div>
+<section><strong>Источник позы</strong><label>Клип<select id="clip"><option>game</option><option>bind</option></select></label>
+<label><input id="paused" type="checkbox" checked> Пауза предпросмотра</label>
+<label>Фаза <output id="phaseValue">0.00</output><input id="phase" type="range" min="0" max="1" step="0.005" value="0"></label>
+<label>Скорость <input id="speed" type="number" min="0.05" max="3" step="0.05" value="1"></label>
+<button id="preview">Применить предпросмотр</button><button id="reset">Сбросить всё</button>
+<p><small>game — обычное смешивание Wurm. bind — исходная поза. Выбранный клип проигрывается только на видимом локальном теле; движение персонажа по миру не меняется.</small></p></section>
+<section><strong>Поправка кости</strong><label>Кость<select id="bone"></select></label><label>Оси<select id="space"><option value="local">Кости (local)</option><option value="parent">Родителя (parent)</option><option value="model">Модели до FK Wurm (model)</option></select></label>
+<div id="rotations"></div><button id="clearBone">Убрать поправку кости</button>
+<p><small>Повороты вокруг собственного сустава, X/Y/Z в градусах. Применяются после смешивания и не накапливаются. Диапазон ±45°. Перемещения и полные локальные матрицы доступны через JSON/CLI.</small></p></section>
+<section><strong>Внешний буфер JSON</strong><textarea id="buffer" spellcheck="false">{"corrections":{}}</textarea><button id="readBuffer">Прочитать</button><button id="sendBuffer">Применить JSON</button><button id="export">Сохранить</button></section>
+</div><div>
+<section><strong>Проверка осей · спереди / сбоку</strong><canvas id="skeleton" width="900" height="430"></canvas><small>Серый — базовый FK Wurm; зелёный — FK с поправкой. Оси выбранной кости: X красная, Y зелёная, Z синяя. Это координаты модели, не мировые координаты игры.</small></section>
+<section><button id="capture">Снять кадр игры</button><label><input id="live" type="checkbox"> Кадр каждые 2 секунды</label><small id="captureInfo"></small><p><img id="frame" alt="Здесь появится кадр Wurm после запроса"></p></section>
+<section><strong>Матрицы выбранной кости</strong><pre id="details"></pre></section>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);let token=location.hash.slice(1)||sessionStorage.getItem('avatar2Token');
+if(token){sessionStorage.setItem('avatar2Token',token);history.replaceState(null,'',location.pathname)}
+let state, schemaId, queue=Promise.resolve(), imageUrl, captureBusy=false;
+async function api(path,data){let r=await fetch(path,{method:data===undefined?'GET':'POST',headers:{Authorization:'Bearer '+token,...(data===undefined?{}:{'Content-Type':'application/json'})},body:data===undefined?undefined:JSON.stringify(data)});if(!r.ok){let e=await r.json();throw Error(e.error||r.status)}return path==='/frame.png'?r.blob():r.json()}
+function fault(e){$('error').textContent=e.message}
+function command(data){queue=queue.then(async()=>{state=await api('/state');const value=await api('/command',{...data,expectedRevision:state.command.revision});state.command=value;$('error').textContent='';return value}).catch(fault);return queue}
+function loadBone(){if(!state)return;let c=state.command.corrections[$('bone').value];$('space').value=c?.space||'local';for(let i=0;i<3;i++){$('r'+i).value=c?.rotation[i]||0;$('v'+i).value=$('r'+i).value}}
+for(let i=0;i<3;i++){let row=document.createElement('label');row.className='axis';row.innerHTML=`${'XYZ'[i]} <input id="r${i}" type="range" min="-45" max="45" step="0.25" value="0"><output id="v${i}">0</output>`;$('rotations').append(row);$('r'+i).oninput=()=>{$('v'+i).value=$('r'+i).value};$('r'+i).onchange=editBone}
+function editBone(){if(!state)return;let corrections=structuredClone(state.command.corrections);corrections[$('bone').value]={space:$('space').value,rotation:[0,1,2].map(i=>+$('r'+i).value),translation:corrections[$('bone').value]?.translation||[0,0,0]};command({corrections})}
+$('bone').onchange=loadBone;$('space').onchange=editBone;
+$('clearBone').onclick=()=>{let corrections=structuredClone(state.command.corrections);delete corrections[$('bone').value];command({corrections}).then(loadBone)};
+$('phase').oninput=()=>{$('phaseValue').value=(+$('phase').value).toFixed(3)};
+function preview(){return command({preview:{clip:$('clip').value,paused:$('paused').checked,phase:+$('phase').value,speed:+$('speed').value}})}
+$('preview').onclick=preview;$('phase').onchange=preview;$('paused').onchange=preview;
+$('reset').onclick=()=>command({reset:true}).then(loadBone);
+$('readBuffer').onclick=()=>{$('buffer').value=JSON.stringify({preview:state.command.preview,corrections:state.command.corrections,pose:state.command.pose},null,2)};
+$('sendBuffer').onclick=()=>{try{command(JSON.parse($('buffer').value)).then(loadBone)}catch(e){fault(e)}};
+$('export').onclick=()=>{let b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});let u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='avatar2-lab-state.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+async function capture(){if(captureBusy)return;captureBusy=true;try{let before=(await api('/state')).capture.timeMillis||0;await api('/capture',{});for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));let s=await api('/state');if(s.capture.status==='failed')throw Error(s.capture.error);if(s.capture.timeMillis>before){let b=await api('/frame.png');if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=URL.createObjectURL(b);$('frame').src=imageUrl;$('captureInfo').textContent=`Кадр: ревизия ${s.capture.revision}, последовательность ${s.capture.sequence}`;return}}throw Error('Нет кадра: окно игры должно отрисовываться')}catch(e){fault(e)}finally{captureBusy=false}}
+$('capture').onclick=capture;setInterval(()=>{if($('live').checked)capture()},2000);
+function draw(){let c=$('skeleton').getContext('2d'),t=state.telemetry,bones=state.schema?.bones||[];c.clearRect(0,0,900,430);if(!t.bones)return;
+for(let side=0;side<2;side++){const point=m=>[225+450*side+m[side?11:3]*170,400-m[7]*170];
+for(let key of ['baselineGlobal','engineGlobal']){c.strokeStyle=key==='baselineGlobal'?'#64727f':'#85d6ad';c.lineWidth=key==='baselineGlobal'?3:1.5;for(let b of bones){if(!b.parent||b.name==='NullCamera0')continue;let m=t.bones[b.name]?.[key],p=t.bones[b.parent]?.[key];if(!m||!p)continue;let a=point(m),z=point(p);c.beginPath();c.moveTo(...a);c.lineTo(...z);c.stroke()}}
+let m=t.bones[$('bone').value]?.engineGlobal;if(m){let p=point(m);for(let axis=0;axis<3;axis++){c.strokeStyle=['#ed7777','#6beb9b','#77aaff'][axis];c.beginPath();c.moveTo(...p);c.lineTo(p[0]+m[(side?8:0)+axis]*38,p[1]-m[4+axis]*38);c.stroke()}}}
+$('details').textContent=JSON.stringify(t.bones[$('bone').value],null,2)}
+async function poll(){try{state=await api('/state');let s=state.schema;if(s&&s.id!==schemaId){schemaId=s.id;$('bone').replaceChildren(...s.bones.filter(b=>b.name!=='NullCamera0').map(b=>new Option(b.name,b.name)));$('bone').value=s.bones.some(b=>b.name==='clavicle_l')?'clavicle_l':$('bone').value;$('clip').replaceChildren(...['game','bind',...s.clips].map(n=>new Option(n,n)));loadBone()}
+let t=state.telemetry;$('status').textContent=`Буфер ${state.command.revision} → применено ${t.revision??'—'} · кадр ${t.sequence??'—'} · ${t.preview||t.status||''} · фаза ${Number(t.phase||0).toFixed(3)}`;if(state.error)$('error').textContent=state.error;draw()}catch(e){fault(e)}finally{setTimeout(poll,750)}}
+poll();
+</script></html>

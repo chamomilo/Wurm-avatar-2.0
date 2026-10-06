@@ -1,0 +1,34 @@
+.gradle/
+.gradle-user/
+build/
+local.properties
+*.log
+__pycache__/
+*.pyc
+libs/*.jar
+*lab-session*.json
+axis-calibration*.json
+walk-observation/
+lab-observation/
+assets/source/
+assets/working/
+tools/blender/extensions/
+tools/blender/user/
+*.blend
+*.blend1
+
+# Reproducible downloads and portable tool installations.
+tools/downloads/
+tools/blender/blender-*/
+
+# Large upstream working sources. Keep manifests, scripts and derived runtime
+# assets under version control; fetch these sources with setup-assets.ps1.
+assets/source/makehuman/
+assets/source/blender-human-base/
+vendor/mpfb2/
+
+# Local exports from proprietary Wurm archives are reference-only.
+assets/source/wurm-vanilla/*.wom
+assets/source/wurm-vanilla/*.xml
+assets/source/wurm-vanilla/*.obj
+assets/source/wurm-vanilla/*.json
