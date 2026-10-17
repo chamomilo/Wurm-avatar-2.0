@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "releasedVersion": "0.13.0",
+  "banks": [
+    {
+      "body": "male-bodybuilder",
+      "sourceDaeSha256": "314731ae32bd1b52d4a2741a26f5d8e2b8ed42da723f1b7579265e1804a67d65",
+      "meshes": {
+        "a41c5e0c3e042f396c84d6d4dc40b4ec5df24f3fedbf07d52fd41d20e0ebc8b5": {
+          "name": "Avatar2BodyMesh-mesh-Avatar2Skin",
+          "components": 43215,
+          "targets": {
+            "mpfb-athletic": "8c29efc1791a7b4db75c580ddd079c154cacc6eda10d5a4551ba6726d4fe58cb",
+            "mpfb-heavy": "351664dbf315dcca14a87149db65ea82e4f5866d751fef3d15e49b7df7054ced",
+            "mpfb-older": "df99e158b4a564bc8ca2dd021cf2e7b83dfed475e8cf3442fcfdbde8f7e09cb5",
+            "build-low-muscle": "b46f8d23dde027918cd3ab44f706bc2d748066c7f89db0366241f4246c1a05d3",
+            "build-full": "fe16512b6b8cd607b5f26f260feb8d95cd639fec85e7dc991ac08a4cf294e49c",
+            "build-low-muscle-full": "7559843b72ea5b4cbcde035eb80973208c3ce2fa9323b28276d879561c38dbcf",
+            "build-shoulders-narrow": "3d33bcba3f296b8b73e4f9ac270eb43c4559ccc4bdac634e64689d87f618ca21",
+            "build-shoulders-wide": "843906e09125077cf8506a28cf514ca06f02f3153129f159c40be09b8cc3bab4"
+          }
+        },
+        "73eacb789169937322becff97af2d43d93615ad5b127b701766dad46b878a47f": {
+          "name": "Avatar2EyesMesh-mesh-Avatar2Eyes",
+          "components": 3228,
+          "targets": {
+            "mpfb-athletic": "7b77c6846925abc75558c64bc81128a415402a6e1dcad8c17f9a73b537d4fe65",
+            "mpfb-heavy": "a3e40a274c2fc6431f31801b90ead79ee7f7b59d5998c3489052ea755b7b8fc3",
+            "mpfb-older": "fa338b16632560bf6f21a873fa43e0af95ce618e2bf22056fdb00920d7d5d5be",
+            "build-low-muscle": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-low-muscle-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-shoulders-narrow": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-shoulders-wide": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787"
+          }
+        }
+      }
+    },
+    {
+      "body": "female-bodybuilder",
+      "sourceDaeSha256": "93bcef7a3b85639720529137cf7fcd2dc7f4c803b4fd58d98baabfd867fea941",
+      "meshes": {
+        "eec579b1d3e972073b7f9a2be770be0f523f9da646f30df670ab2b2a9cc33915": {
+          "name": "Avatar2BodyMesh-mesh-Avatar2Skin",
+          "components": 43884,
+          "targets": {
+            "mpfb-athletic": "ebc4bdee744af57484d2fbea60d9ac784ef4c593bdc7ad06d5cffff81f010630",
+            "mpfb-heavy": "43d39cb06c52c8d979e5ff1a1aef07cd99f0e7c5747fa61559a0b20c97a70038",
+            "mpfb-older": "cbe0dd8bef1c64a62f7c0b33ebb390d09d59b75204bfa158dd22550215a2c5d4",
+            "build-low-muscle": "48736c2906bff6ee22bbb51267b49e973a7c6c7320311e524949d6a99cdedc29",
+            "build-full": "f878208c45b91777322ed5d6701d129c443b930f29233d35141d7e7981f67750",
+            "build-low-muscle-full": "562ece747185bd10d0af9121212a746621103c53e965009c295e443e51f2e4d6",
+            "build-breast-small-original": "4e0e0dec427fb3636ac1a12d641c15630c143ea3f53d71093902f036b83b02e8",
+            "build-breast-large-original": "f14458d3065435067be7549958f5f5e8e8122f92d6b55b51abca087b78e678e6",
+            "build-breast-small-low-muscle": "b3d50a7cafc6d58fe0bd47a2bdc2efeaab8579ed272a78983bef582c99f4824c",
+            "build-breast-large-low-muscle": "cb80996671a17b1d417aa551bb345e7eacb3d84b3e119ced5cb630737d119897",
+            "build-breast-small-full": "e64dfe5592210e9b792528faac92327ca48052828fd859f4c351116bb5f44008",
+            "build-breast-large-full": "ddd0ee3bceb3e7abc9afa0f9d2119546668d4e92ac121b6021bc07ab51889f80",
+            "build-breast-small-low-muscle-full": "d2cd61cf5f5006cf24ee99f1b012c4e80416b4647776ae8a5ccc9580a2ce62a3",
+            "build-breast-large-low-muscle-full": "a06330a5e47febc745cc0c7d5fdeff65dc2ff8d12bce895768996b30d1ea3426",
+            "build-shoulders-narrow": "5fb87480adc32d75e4767745ccc1aa400b204035896b02028197875d92cd68f7",
+            "build-shoulders-wide": "db9b789c51498f0fcdd668362bb719abe8af49465522d3147f806c90b5fecaf2"
+          }
+        },
+        "aa5eca1fafbad0e577db20d70f153ad1c1057f6937c19ca140c11a1ab0df1205": {
+          "name": "Avatar2EyesMesh-mesh-Avatar2Eyes",
+          "components": 3228,
+          "targets": {
+            "mpfb-athletic": "89b494ab879fab2880b53177f4ba2d8c5b95792dff34f2fdba30f068b73b74a5",
+            "mpfb-heavy": "8f607276873efc16b76d58430e4d404d2fdcf1342fde2f5cc18116d1b216c6a3",
+            "mpfb-older": "57619914ad34a68c99d06ec15953fc1c40cfc00ce9bb2c06f140f10e60924f03",
+            "build-low-muscle": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-low-muscle-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-small-original": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-large-original": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-small-low-muscle": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-large-low-muscle": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-small-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-large-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-small-low-muscle-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-breast-large-low-muscle-full": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-shoulders-narrow": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787",
+            "build-shoulders-wide": "dfac25029d4c91ec9e5db189c416349ee0c5a28c7d89bc45b873a0f5b19fa787"
+          }
+        }
+      }
+    }
+  ]
+}

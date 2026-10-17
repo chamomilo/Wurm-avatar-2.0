@@ -5,7 +5,10 @@
             <walk><file>anim/male/avatar2-walk.dae</file><addToPeriodic/></walk>
             <run><file>anim/male/avatar2-run.dae</file><addToPeriodic/></run>
             <gait.walk.relaxed><file>anim/male/avatar2-walk.dae</file><addToPeriodic/></gait.walk.relaxed>
-            <gait.jog><file>anim/male/avatar2-run.dae</file><addToPeriodic/></gait.jog>
+            <gait.jog><file>anim/male/avatar2-run-previous.dae</file><addToPeriodic/></gait.jog>
+            <gait.sprint><file>anim/male/avatar2-run.dae</file><addToPeriodic/></gait.sprint>
+            <gait.jog.clean><file>anim/male/avatar2-run-jog-clean.dae</file><addToPeriodic/></gait.jog.clean>
+            <gait.sprint.clean><file>anim/male/avatar2-run-sprint-clean.dae</file><addToPeriodic/></gait.sprint.clean>
             <idle.p1><file>anim/male/avatar2-idle.dae</file><addToPeriodic/><staticCamera/></idle.p1>
             <walk.p1><file>anim/male/avatar2-walk.dae</file><addToPeriodic/><staticCamera/></walk.p1>
             <run.p1><file>anim/male/avatar2-run.dae</file><addToPeriodic/><staticCamera/></run.p1>
@@ -17,7 +20,10 @@
             <walk><file>anim/male/avatar2-walk.dae</file><addToPeriodic/></walk>
             <run><file>anim/male/avatar2-run.dae</file><addToPeriodic/></run>
             <gait.walk.relaxed><file>anim/male/avatar2-walk.dae</file><addToPeriodic/></gait.walk.relaxed>
-            <gait.jog><file>anim/male/avatar2-run.dae</file><addToPeriodic/></gait.jog>
+            <gait.jog><file>anim/male/avatar2-run-previous.dae</file><addToPeriodic/></gait.jog>
+            <gait.sprint><file>anim/male/avatar2-run.dae</file><addToPeriodic/></gait.sprint>
+            <gait.jog.clean><file>anim/male/avatar2-run-jog-clean.dae</file><addToPeriodic/></gait.jog.clean>
+            <gait.sprint.clean><file>anim/male/avatar2-run-sprint-clean.dae</file><addToPeriodic/></gait.sprint.clean>
             <idle.p1><file>anim/male/avatar2-idle.dae</file><addToPeriodic/><staticCamera/></idle.p1>
             <walk.p1><file>anim/male/avatar2-walk.dae</file><addToPeriodic/><staticCamera/></walk.p1>
             <run.p1><file>anim/male/avatar2-run.dae</file><addToPeriodic/><staticCamera/></run.p1>
@@ -29,7 +35,10 @@
             <walk><file>anim/female/avatar2-walk.dae</file><addToPeriodic/></walk>
             <run><file>anim/female/avatar2-run.dae</file><addToPeriodic/></run>
             <gait.walk.relaxed><file>anim/female/avatar2-walk.dae</file><addToPeriodic/></gait.walk.relaxed>
-            <gait.jog><file>anim/female/avatar2-run.dae</file><addToPeriodic/></gait.jog>
+            <gait.jog><file>anim/female/avatar2-run-previous.dae</file><addToPeriodic/></gait.jog>
+            <gait.sprint><file>anim/female/avatar2-run.dae</file><addToPeriodic/></gait.sprint>
+            <gait.jog.clean><file>anim/female/avatar2-run-jog-clean.dae</file><addToPeriodic/></gait.jog.clean>
+            <gait.sprint.clean><file>anim/female/avatar2-run-sprint-clean.dae</file><addToPeriodic/></gait.sprint.clean>
             <idle.p1><file>anim/female/avatar2-idle.dae</file><addToPeriodic/><staticCamera/></idle.p1>
             <walk.p1><file>anim/female/avatar2-walk.dae</file><addToPeriodic/><staticCamera/></walk.p1>
             <run.p1><file>anim/female/avatar2-run.dae</file><addToPeriodic/><staticCamera/></run.p1>
@@ -41,7 +50,10 @@
             <walk><file>anim/female/avatar2-walk.dae</file><addToPeriodic/></walk>
             <run><file>anim/female/avatar2-run.dae</file><addToPeriodic/></run>
             <gait.walk.relaxed><file>anim/female/avatar2-walk.dae</file><addToPeriodic/></gait.walk.relaxed>
-            <gait.jog><file>anim/female/avatar2-run.dae</file><addToPeriodic/></gait.jog>
+            <gait.jog><file>anim/female/avatar2-run-previous.dae</file><addToPeriodic/></gait.jog>
+            <gait.sprint><file>anim/female/avatar2-run.dae</file><addToPeriodic/></gait.sprint>
+            <gait.jog.clean><file>anim/female/avatar2-run-jog-clean.dae</file><addToPeriodic/></gait.jog.clean>
+            <gait.sprint.clean><file>anim/female/avatar2-run-sprint-clean.dae</file><addToPeriodic/></gait.sprint.clean>
             <idle.p1><file>anim/female/avatar2-idle.dae</file><addToPeriodic/><staticCamera/></idle.p1>
             <walk.p1><file>anim/female/avatar2-walk.dae</file><addToPeriodic/><staticCamera/></walk.p1>
             <run.p1><file>anim/female/avatar2-run.dae</file><addToPeriodic/><staticCamera/></run.p1>

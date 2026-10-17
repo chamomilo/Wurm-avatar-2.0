@@ -1,0 +1,4 @@
+{
+  "preview": {"clip": "walk", "paused": true, "phase": 0.25, "speed": 1},
+  "geometry": {"torsoWidth": 1, "torsoDepth": 0.5}
+}

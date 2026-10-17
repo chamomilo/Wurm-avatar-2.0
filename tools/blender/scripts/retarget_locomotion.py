@@ -4,6 +4,7 @@ import bpy
 import os
 import re
 import sys
+import math
 from mathutils import Matrix, Vector
 
 
@@ -14,11 +15,39 @@ OUTPUT_ROOT = os.environ.get(
 WORKING_ROOT = os.environ.get(
     "AVATAR2_RETARGET_WORKING_ROOT",
     os.path.join(PROJECT, "assets", "working", "animations"))
-RETARGET_VERSION = "run-world-axial-level-clavicles-v5"
+RETARGET_VERSION = "symmetric-neutral-quiet-chest-idle-v7"
 
-# Absolute anatomical direction is intentionally limited to limb chains.  It
-# keeps knees, elbows and wrists in the donor's approved walk silhouette while
-# their heads remain attached to the clean native pelvis/clavicle hierarchy.
+
+def quiet_idle(target, mapping, reference):
+    """Attenuate local motion, keeping breathing chiefly in the chest.
+
+    Work from a snapshot so a changed parent cannot alter a child's measured
+    delta. Only the first spine link receives the mild forward posture change;
+    descendants inherit it naturally, without rotating limbs twice.
+    """
+    local = {p.name: (p.parent.matrix.inverted() @ p.matrix
+                     if p.parent else p.matrix.copy()) for _, p in mapping}
+    if not reference:
+        reference.update({name: matrix.copy() for name, matrix in local.items()})
+    for _, p in mapping:
+        amount = 0.35 if p.name in {"spine_02", "spine_03"} else 0.10
+        if p.name == "spine_01":
+            amount = 0.15
+        ref = reference[p.name]
+        rotation = ref.to_quaternion().slerp(local[p.name].to_quaternion(), amount)
+        point = ref.translation.lerp(local[p.name].translation, amount)
+        result = Matrix.LocRotScale(point, rotation, Vector((1, 1, 1)))
+        if p.name == "spine_01":
+            parent_rest = p.parent.bone.matrix_local.to_quaternion().to_matrix().to_4x4()
+            posture = (parent_rest.inverted()
+                       @ Matrix.Rotation(math.radians(3), 4, 'X') @ parent_rest)
+            result = posture @ result
+            result.translation = point
+        p.matrix = p.parent.matrix @ result if p.parent else result
+        bpy.context.view_layer.update()
+
+# Donor limb directions retain native bone roll and attachment points. Idle
+# walk and run arms are aligned with the native anatomical chest.
 # The torso and clavicles must never use this path: doing so copies the donor's
 # stylised static silhouette into the MakeHuman skin around the hip, spine,
 # neck and shoulder junctions.
@@ -42,28 +71,46 @@ DIRECTIONAL_BONES = {
 # Quaternius and MakeHuman use different clavicle-local bases.  Applying the
 # donor delta on the right maps the walk's anatomical yaw into target-local
 # pitch, lifting one shoulder and dropping the other.  Clavicles therefore
-# preserve the donor delta in armature/world axes; the already-approved spine
-# and limb paths stay unchanged.
+# preserve the donor delta in armature/world axes, as does the axial chain.
 WORLD_DELTA_BONES = {"clavicle_r", "clavicle_l"}
 
-RUN_WORLD_AXIAL_BONES = {
+WORLD_AXIAL_BONES = {
     "Root", "pelvis", "spine_01", "spine_02", "spine_03",
     "neck_01", "head",
 }
 
+LEG_BONES = {"thigh_l", "calf_l", "foot_l", "ball_l",
+             "thigh_r", "calf_r", "foot_r", "ball_r"}
 
-def level_clavicle_direction(rotation, target_rest):
-    """Remove stylised donor shoulder hiking without changing its yaw/roll."""
-    bone_axis = Vector((0.0, 1.0, 0.0))
-    rest_direction = (target_rest.to_quaternion() @ bone_axis).normalized()
-    pose_direction = (rotation @ bone_axis).normalized()
-    desired_direction = Vector((
-        pose_direction.x,
-        pose_direction.y,
-        rest_direction.z,
-    )).normalized()
-    return (pose_direction.rotation_difference(desired_direction)
-            @ rotation).normalized()
+
+def symmetric_pose(source, matrices):
+    """Keep neutral sagittal posture, remove one-sided stance and axial twist.
+
+    Mirror world/rest deltas rather than bone rotations: left/right bones have
+    different rolls. Reflection on both sides of a rotation stays a rotation.
+    This is used for the Idle reference and Idle itself, never for walk/run.
+    """
+    reflection = Matrix.Diagonal((-1.0, 1.0, 1.0))
+    deltas = {name: m.to_quaternion()
+              @ source.data.bones[name].matrix_local.to_quaternion().inverted()
+              for name, m in matrices.items()}
+    result = {}
+    for name, m in matrices.items():
+        other = (name[:-2] + ('_r' if name.endswith('_l') else '_l')
+                 if name.endswith(('_l', '_r')) else name)
+        other = other if other in matrices else name
+        mirrored = (reflection @ deltas[other].to_matrix()
+                    @ reflection).to_quaternion()
+        delta = deltas[name].slerp(mirrored, 0.5)
+        rotation = delta @ source.data.bones[name].matrix_local.to_quaternion()
+        point = m.translation.copy()
+        opposite = matrices[other].translation
+        point.x = (point.x - opposite.x) * 0.5
+        point.y = (point.y + opposite.y) * 0.5
+        point.z = (point.z + opposite.z) * 0.5
+        result[name] = Matrix.LocRotScale(point, rotation, Vector((1, 1, 1)))
+    return result
+
 
 MOCAP_TO_NATIVE = {
     "root": "Root",
@@ -124,7 +171,9 @@ MOCAP_TO_NATIVE = {
 CLIPS = {
     "idle": ("Idle_Loop", 1, 76),
     "walk": ("Walk_Loop", 1, 41),
-    "run": ("Jog_Fwd_Loop", 1, 29),
+    "run": ("Sprint_Loop", 1, 21),
+    "run-jog-clean": ("Jog_Fwd_Loop", 1, 29),
+    "run-sprint-clean": ("Sprint_Loop", 1, 21),
 }
 
 
@@ -161,16 +210,17 @@ def mapped_in_target_order(target, source):
     return result
 
 
-def source_reference_matrices(source):
+def source_reference_matrices(source, symmetric=True):
     """Return the donor pose that corresponds to the target bind pose.
 
     MakeHuman's game rig is authored in a relaxed A-pose while the Quaternius
     armature bind pose is a T-pose.  The old retarget copied absolute donor
     directions and consequently inherited the donor's stylised spine and
     shoulder silhouette.  A conventional rest-delta still lowers the arms
-    twice.  The neutral donor frame is therefore the shared retarget pose:
-    source motion is measured from it and applied on top of the clean native
-    MakeHuman bind pose.
+    twice. The shared neutral keeps the first Idle frame's sagittal posture,
+    but averages mirrored rest-relative rotations to remove its static twist
+    and one-sided stance. Motion is applied in world axes on top of the clean
+    native bind pose. The selected Sprint uses this same clean reference.
     """
     source.animation_data_create()
     neutral = find_action("Idle_Loop")
@@ -179,8 +229,9 @@ def source_reference_matrices(source):
         source.animation_data.action_slot = neutral.slots[0]
     bpy.context.scene.frame_set(1)
     bpy.context.view_layer.update()
-    return {pose_bone.name: pose_bone.matrix.copy()
-            for pose_bone in source.pose.bones}
+    matrices = {pose_bone.name: pose_bone.matrix.copy()
+                for pose_bone in source.pose.bones}
+    return symmetric_pose(source, matrices) if symmetric else matrices
 
 
 def reference_relative_translation(source_pose, reference_matrices):
@@ -207,7 +258,7 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
     target_action.use_fake_user = True
     target.animation_data.action = target_action
     scene = bpy.context.scene
-    scene.render.fps = 30
+    scene.render.fps = 20 if clip_name == "idle" else 30
     scene.frame_start = first
     scene.frame_end = last
 
@@ -220,17 +271,26 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
                   - target.data.bones["ball_l"].head_local.z)
     root_motion_scale = target_leg / source_leg if source_leg > 0.001 else 1.0
 
+    idle_reference = {}
     for frame in range(first, last + 1):
         scene.frame_set(frame)
+        source_matrices = {p.name: p.matrix.copy() for p in source.pose.bones}
+        if clip_name == "idle":
+            source_matrices = symmetric_pose(source, source_matrices)
         for pose_bone in target.pose.bones:
             pose_bone.matrix_basis.identity()
         bpy.context.view_layer.update()
 
         for source_pose, target_pose in mapping:
             target_rest = target_pose.bone.matrix_local
+            source_matrix = source_matrices[source_pose.name]
 
             source_reference = reference_matrices[source_pose.name]
-            if target_pose.name in DIRECTIONAL_BONES:
+            if clip_name == "idle" and target_pose.name in LEG_BONES:
+                rotation = (source_matrix.to_quaternion()
+                            @ source_reference.to_quaternion().inverted()
+                            @ target_rest.to_quaternion()).normalized()
+            elif target_pose.name in DIRECTIONAL_BONES:
                 # Preserve the approved donor limb direction but retain the
                 # target bone's intrinsic roll. This avoids the lateral arm and
                 # knee axes produced when a total global delta is conjugated
@@ -244,33 +304,31 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
                                            @ target_rest_rotation)
                 roll_offset = (source_rest_rotation.inverted()
                                @ aligned_target_rotation)
-                rotation = (source_pose.matrix.to_quaternion()
+                rotation = (source_matrix.to_quaternion()
                             @ roll_offset).normalized()
-            elif (clip_name == "run"
-                  and target_pose.name in WORLD_DELTA_BONES):
-                # The donor jog contains a large stylised shoulder hike and
-                # its Idle_Loop reference is already twisted.  Use the donor
-                # armature rest as the run reference, retain forward/back yaw,
-                # and level only the clavicle direction in the vertical axis.
-                world_delta = (
-                    source_pose.matrix.to_quaternion()
-                    @ source_pose.bone.matrix_local.to_quaternion().inverted())
-                rotation = (world_delta
-                            @ target_rest.to_quaternion()).normalized()
-                rotation = level_clavicle_direction(rotation, target_rest)
+                if target_pose.name not in LEG_BONES:
+                    # Arm directions must follow the same anatomical chest
+                    # reference as the torso, including its sagittal posture.
+                    # Absolute donor axes left one elbow 6 cm farther out.
+                    source_chest = source_matrices["spine_03"].to_quaternion()
+                    source_rest_chest = source.data.bones["spine_03"].matrix_local.to_quaternion()
+                    target_chest = target.pose.bones["spine_03"]
+                    target_chest_delta = (target_chest.matrix.to_quaternion()
+                                          @ target_chest.bone.matrix_local.to_quaternion().inverted())
+                    source_chest_delta = source_chest @ source_rest_chest.inverted()
+                    rotation = (target_chest_delta @ source_chest_delta.inverted()
+                                @ rotation).normalized()
             elif target_pose.name in WORLD_DELTA_BONES:
                 world_delta = (
-                    source_pose.matrix.to_quaternion()
+                    source_matrix.to_quaternion()
                     @ source_reference.to_quaternion().inverted())
                 rotation = (world_delta
                             @ target_rest.to_quaternion()).normalized()
-            elif (clip_name == "run"
-                  and target_pose.name in RUN_WORLD_AXIAL_BONES):
-                # Run has much stronger torso motion than walk.  Applying its
-                # neutral delta in each target bone's local basis turns yaw
-                # into a large sideways bend, especially on the male body.
+            elif target_pose.name in WORLD_AXIAL_BONES:
+                # Apply axial deltas in anatomical/world axes. Conjugating
+                # donor yaw through native bone bases created a constant lean.
                 world_delta = (
-                    source_pose.matrix.to_quaternion()
+                    source_matrix.to_quaternion()
                     @ source_reference.to_quaternion().inverted())
                 rotation = (world_delta
                             @ target_rest.to_quaternion()).normalized()
@@ -281,7 +339,7 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
                     target_rest.to_quaternion()
                     @ source_reference.to_quaternion().inverted())
                 rotation = (reference_correction
-                            @ source_pose.matrix.to_quaternion()).normalized()
+                            @ source_matrix.to_quaternion()).normalized()
 
             if target_pose.parent:
                 parent_pose = target_pose.parent.matrix
@@ -293,6 +351,10 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
             if target_pose.name in {"Root", "pelvis"}:
                 offset = (reference_relative_translation(
                     source_pose, reference_matrices) * root_motion_scale)
+                if clip_name == "idle":
+                    # Symmetric Idle has no one-sided pelvis offset. Preserve
+                    # only its small breathing/weight-shift translation.
+                    offset.x = 0.0
                 if target_pose.name == "Root":
                     offset.y = 0.0
                 head += offset
@@ -300,6 +362,9 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
             target_pose.matrix = Matrix.LocRotScale(
                 head, rotation, Vector((1.0, 1.0, 1.0)))
             bpy.context.view_layer.update()
+        if clip_name == "idle":
+            quiet_idle(target, mapping, idle_reference)
+        for _source_pose, target_pose in mapping:
             target_pose.keyframe_insert(data_path="location", frame=frame,
                                         group=target_pose.name)
             target_pose.keyframe_insert(data_path="rotation_quaternion", frame=frame,
@@ -312,7 +377,7 @@ def retarget_clip(target, source, clip_name, source_fragment, first, last,
             keyframe.interpolation = "LINEAR"
     target_action["avatar2_source"] = source_action.name
     target_action["avatar2_retarget"] = RETARGET_VERSION
-    target_action["avatar2_fps"] = 30
+    target_action["avatar2_fps"] = scene.render.fps
     target_action["avatar2_loop"] = True
     return target_action
 
@@ -373,10 +438,13 @@ def strip_wurm_unsafe_channels(output_path):
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    if len(args) != 3:
-        raise RuntimeError("usage: retarget_locomotion.py -- target.blend source.fbx male|female")
+    if len(args) not in (3, 4):
+        raise RuntimeError("usage: retarget_locomotion.py -- target.blend source.fbx male|female [idle,walk,run,run-jog-clean,run-sprint-clean]")
     target_blend, source_fbx, sex = [os.path.abspath(value) if index < 2 else value
-                                     for index, value in enumerate(args)]
+                                     for index, value in enumerate(args[:3])]
+    selected = args[3].split(',') if len(args) == 4 else list(CLIPS)
+    if not selected or any(name not in CLIPS for name in selected):
+        raise RuntimeError("Unknown clip selection")
     bpy.ops.wm.open_mainfile(filepath=target_blend)
     target = next(obj for obj in bpy.context.scene.objects
                   if obj.type == "ARMATURE" and obj.name.startswith("Avatar2NativeRig"))
@@ -404,6 +472,8 @@ def main():
 
     actions = {}
     for clip_name, (fragment, first, last) in CLIPS.items():
+        if clip_name not in selected:
+            continue
         actions[clip_name] = retarget_clip(
             target, source, clip_name, fragment, first, last,
             reference_matrices)
@@ -419,9 +489,10 @@ def main():
             bpy.data.actions.remove(action)
     bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True,
                                   do_recursive=True)
-    target.animation_data.action = actions["walk"]
-    bpy.context.scene.frame_start = CLIPS["walk"][1]
-    bpy.context.scene.frame_end = CLIPS["walk"][2]
+    preview = "walk" if "walk" in actions else selected[0]
+    target.animation_data.action = actions[preview]
+    bpy.context.scene.frame_start = CLIPS[preview][1]
+    bpy.context.scene.frame_end = CLIPS[preview][2]
     os.makedirs(WORKING_ROOT, exist_ok=True)
     working = os.path.join(WORKING_ROOT, sex + "-locomotion.blend")
     bpy.ops.wm.save_as_mainfile(filepath=working)

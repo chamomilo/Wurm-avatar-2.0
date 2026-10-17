@@ -1,0 +1,56 @@
+{
+  "version": "0.11.0",
+  "profileSchema": 5,
+  "sex": "female",
+  "control": "buildBreast",
+  "range": [
+    0,
+    1
+  ],
+  "neutral": 0.5,
+  "bankSha256": "f023ea563951f41bfbd6bb1f976cde72923ca18491284e0308f0b8f2a65d549c",
+  "maleBankUnchanged": true,
+  "releasedTargetsUnchanged": 6,
+  "corners": [
+    {
+      "target": "build-breast-small-original",
+      "rmsBreastDisplacementMetres": 0.0014238441673440469,
+      "maxComponentDisplacementMetres": 0.011719778180122375
+    },
+    {
+      "target": "build-breast-large-original",
+      "rmsBreastDisplacementMetres": 0.0050344352281876635,
+      "maxComponentDisplacementMetres": 0.05308973789215088
+    },
+    {
+      "target": "build-breast-small-low-muscle",
+      "rmsBreastDisplacementMetres": 0.001334808303319277,
+      "maxComponentDisplacementMetres": 0.010985076427459717
+    },
+    {
+      "target": "build-breast-large-low-muscle",
+      "rmsBreastDisplacementMetres": 0.0047877231715378315,
+      "maxComponentDisplacementMetres": 0.052329301834106445
+    },
+    {
+      "target": "build-breast-small-full",
+      "rmsBreastDisplacementMetres": 0.0014495513690985491,
+      "maxComponentDisplacementMetres": 0.0118008553981781
+    },
+    {
+      "target": "build-breast-large-full",
+      "rmsBreastDisplacementMetres": 0.0049397364002836406,
+      "maxComponentDisplacementMetres": 0.052181243896484375
+    },
+    {
+      "target": "build-breast-small-low-muscle-full",
+      "rmsBreastDisplacementMetres": 0.0014272445226983154,
+      "maxComponentDisplacementMetres": 0.011648356914520264
+    },
+    {
+      "target": "build-breast-large-low-muscle-full",
+      "rmsBreastDisplacementMetres": 0.004787783545803333,
+      "maxComponentDisplacementMetres": 0.052375078201293945
+    }
+  ]
+}

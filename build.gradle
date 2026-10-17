@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.avatar2'
-version = '0.2.0'
+version = '0.15.2'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -51,25 +51,68 @@ task sourceDist(type: Zip) {
     from(projectDir) {
         include 'src/**', 'docs/**', 'config/**', 'mods/avatar2.properties',
                 'tools/animation-lab/*.py', 'tools/blender/*.py', 'tools/blender/scripts/*.py',
-                'tools/*.ps1', 'assets/metadata/**', 'assets/runtime/**', 'resource-pack/**',
+                'tools/*.ps1', 'tools/prepare_age_skins.py', 'tools/verify_body_age.py', 'assets/metadata/**', 'assets/runtime/**', 'resource-pack/**',
                 'build.gradle', 'settings.gradle', 'gradle/**', 'gradlew', 'gradlew.bat',
-                'README.md', 'LICENSE', 'COPYING', 'NOTICE.md', '.gitignore'
+                'README.md', 'README.txt', 'CHANGELOG.md', 'LICENSE', 'COPYING', 'NOTICE.md', '.gitignore', '.gitattributes',
+                'chamomilo-updater.lock.properties'
         exclude '**/__pycache__/**'
     }
 }
 
 jar {
     archiveFileName = "avatar2-${project.version}.jar"
+    into('META-INF/licenses/avatar2') { from 'LICENSE', 'COPYING', 'NOTICE.md' }
 }
 
-task avatarResources(type: Jar) {
+// Keep the four historical control bodies in authoring sources, while shipping
+// only the two validated Shape bindings and their matching metadata.
+task prepareCanonicalBodyResources {
+    inputs.files('assets/runtime/body/body-manifest.json', 'assets/runtime/body/properties.xml')
+    outputs.dir("${buildDir}/canonical-body")
+    doLast {
+        def target = file("${buildDir}/canonical-body")
+        target.mkdirs()
+        def manifest = new groovy.json.JsonSlurper().parse(file('assets/runtime/body/body-manifest.json'))
+        manifest.variants = manifest.variants.findAll { it.name in ['male-bodybuilder','female-bodybuilder'] }
+        if (manifest.variants*.name.toSet() != ['male-bodybuilder','female-bodybuilder'].toSet())
+            throw new GradleException('Missing canonical body metadata')
+        new File(target,'body-manifest.json').setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(manifest)), 'UTF-8')
+        def properties = new XmlParser().parse(file('assets/runtime/body/properties.xml'))
+        properties.children().findAll { it.name().toString().endsWith('-athletic.dae') }.each { properties.remove(it) }
+        new File(target,'properties.xml').setText(groovy.xml.XmlUtil.serialize(properties), 'UTF-8')
+    }
+}
+
+task avatarResources(type: Jar, dependsOn: prepareCanonicalBodyResources) {
     archiveFileName = "avatar2-resources-${project.version}.jar"
     destinationDirectory = file("${buildDir}/resources-pack")
     from('resource-pack')
     into('avatar2/body') {
         from('assets/runtime/body') {
-            include '**/*.dae', '**/*.png', 'body-manifest.json', 'properties.xml'
+            include '**/*.dae', '**/*.png'
+            exclude '*-athletic.dae'
         }
+        from("${buildDir}/canonical-body") { include 'body-manifest.json', 'properties.xml' }
+    }
+    into('avatar2/morph') { from('assets/runtime/morph') { include '*.avm' } }
+    into('META-INF/licenses/avatar2') { from 'docs/THIRD_PARTY_ASSETS.md' }
+}
+
+task verifyCanonicalBodies(dependsOn: avatarResources) {
+    doLast {
+        def packed = zipTree(avatarResources.archiveFile.get().asFile)
+        def bodies = packed.matching { include 'avatar2/body/*.dae' }.files*.name.toSet()
+        if (bodies != ['male-bodybuilder.dae','female-bodybuilder.dae'].toSet())
+            throw new GradleException('Resource pack must contain exactly two canonical bodies')
+        def manifest = new groovy.json.JsonSlurper().parse(packed.matching { include 'avatar2/body/body-manifest.json' }.singleFile)
+        if (manifest.variants*.name.toSet() != ['male-bodybuilder','female-bodybuilder'].toSet())
+            throw new GradleException('Resource pack body metadata differs from canonical bodies')
+        def properties = new XmlParser().parse(packed.matching { include 'avatar2/body/properties.xml' }.singleFile)
+        if (properties.children()*.name().toSet() != bodies)
+            throw new GradleException('Resource pack animation bindings differ from canonical bodies')
+        def mappings = packed.matching { include 'mappings.txt' }.singleFile.getText('UTF-8')
+        if (mappings.contains('.athletic') || mappings.contains('-athletic.dae'))
+            throw new GradleException('Resource pack contains a retired Athletic mapping')
     }
 }
 
@@ -78,21 +121,30 @@ task verifyArtifact(dependsOn: jar) {
         def contents = zipTree(jar.archiveFile.get().asFile)
         [
                 'org/avatar2/client/Avatar2Mod.class',
+                'org/avatar2/client/AvatarGeometryPrototype.class',
+                'org/avatar2/client/AvatarHeightPrototype.class',
+                'org/avatar2/client/AvatarLocomotion.class',
+                'org/avatar2/client/AvatarEquipmentSockets.class',
+                'org/avatar2/client/AvatarFirstPerson.class',
+                'org/avatar2/client/AvatarAgeSkin.class',
+                'org/avatar2/client/AvatarHair.class',
+                'org/avatar2/client/AvatarScalp.class',
+                'org/avatar2/client/AvatarHairDetail.class',
+                'org/avatar2/core/AgeSkin.class',
+                'org/avatar2/core/FirstPersonCut.class',
+                'org/avatar2/core/HeightLimits.class',
+                'org/avatar2/core/GeometryProbe.class',
+                'org/avatar2/core/MorphBank.class',
                 'org/avatar2/client/AvatarStudioController.class',
+                'com/wurmonline/client/renderer/model/collada/animation/AvatarWalkMotion.class',
                 'org/avatar2/core/AvatarProfile.class',
                 'org/avatar2/core/MaterialReflection.class',
                 'org/avatar2/core/OutfitLayerRules.class',
                 'com/wurmonline/client/renderer/gui/AvatarStudioWindow.class',
                 'org/avatar2/lab/AnimationLab.class',
-                'org/avatar2/lab/dashboard.html',
-                'org/chamomilo/wurm/update/SharedUpdateCoordinator.class',
-                'org/chamomilo/wurm/update/UpdateTarget.class',
-                'org/chamomilo/wurm/update/GitHubReleaseClient.class',
-                'org/chamomilo/wurm/update/ModUpdate.class',
-                'org/chamomilo/wurm/update/ModCatalog.class',
-                'org/chamomilo/wurm/update/update-frame.png',
-                'com/wurmonline/client/resources/ChamomiloResourceUrl.class',
-                'com/wurmonline/client/renderer/gui/ChamomiloUpdateWindow.class'
+                'org/avatar2/client/AvatarShieldWalk.class',
+                'org/avatar2/lab/LabPageResource.class',
+                'org/avatar2/lab/dashboard.html'
         ].each { requiredClass ->
             if (contents.matching { include requiredClass }.files.empty) {
                 throw new GradleException("Avatar 2.0 artifact is missing ${requiredClass}")
@@ -113,6 +165,7 @@ task verifyModDescriptor(dependsOn: jar) {
         [sharedClassLoader: 'true', updateProvider: 'chamomilo',
          updateCoordinatorProtocol: '1', updateId: 'avatar2', updateName: 'Avatar 2.0',
          updateRepo: 'chamomilo/Wurm-avatar-2.0', updateAsset: 'avatar2-{version}.zip',
+         resourcePack: "mods/avatar2/avatar2-resources-${project.version}.jar".toString(),
          version: project.version.toString()].each { key, value ->
             if (descriptor.getProperty(key) != value)
                 throw new GradleException("Invalid shared updater metadata: ${key}")
@@ -120,27 +173,163 @@ task verifyModDescriptor(dependsOn: jar) {
     }
 }
 
+task verifyMorphSources(dependsOn: avatarResources) {
+    doLast {
+        def manifest = new groovy.json.JsonSlurper().parse(file('assets/metadata/morph-prototype.json'))
+        if (manifest.schema != 1 || manifest.bodies*.body.toSet() != ['male-bodybuilder', 'female-bodybuilder'].toSet())
+            throw new GradleException('Invalid morph provenance manifest')
+        def packed = zipTree(avatarResources.archiveFile.get().asFile)
+        manifest.bodies.each { row ->
+            ['sourceDaeSha256': "assets/runtime/body/${row.body}.dae",
+             'bankSha256': "assets/runtime/morph/${row.body}.avm"].each { key, path ->
+                def digest = java.security.MessageDigest.getInstance('SHA-256').digest(file(path).bytes).encodeHex().toString()
+                if (digest != row[key]) throw new GradleException("Morph provenance mismatch: ${path}")
+            }
+            def entries = packed.matching { include "avatar2/morph/${row.body}.avm" }.files
+            if (entries.size() != 1 || !java.util.Arrays.equals(entries.first().bytes, file("assets/runtime/morph/${row.body}.avm").bytes))
+                throw new GradleException("Resource pack morph mismatch: ${row.body}")
+        }
+    }
+}
+
 task dist(type: Zip, dependsOn: ['test', 'verifyArtifact', 'verifyModDescriptor',
-                                 'avatarResources', 'verifyGeneratedBodies']) {
+                                 'avatarResources', 'verifyMorphSources', 'verifyGeneratedBodies', 'verifyDashboardRuntime', 'verifyWalkMotionRuntime', 'verifyGeometryRuntime', 'verifyEquipmentSocketsRuntime']) {
     archiveFileName = "avatar2-${project.version}.zip"
     destinationDirectory = file("${buildDir}/distributions")
 
     into('mods/avatar2') {
         from jar
         from avatarResources
-        from 'README.md'
-        from 'LICENSE', 'COPYING', 'NOTICE.md'
-        from('docs') { into 'docs' }
-        from('tools/animation-lab') { include '*.py'; into 'animation-lab' }
-        from('config') { into 'config' }
-        from('assets/metadata') { into 'assets/metadata' }
     }
     into('mods') {
         from 'mods/avatar2.properties'
     }
+    from 'README.txt'
+    doLast {
+        def expected = ['README.txt', 'mods/avatar2.properties',
+                "mods/avatar2/avatar2-${project.version}.jar".toString(),
+                "mods/avatar2/avatar2-resources-${project.version}.jar".toString()].toSet()
+        def archive = new java.util.zip.ZipFile(archiveFile.get().asFile)
+        try {
+            def entries = java.util.Collections.list(archive.entries()).findAll { !it.directory }*.name
+            if (entries.size() != expected.size() || entries.toSet() != expected)
+                throw new GradleException("Unexpected installable ZIP contents: ${entries}")
+        } finally { archive.close() }
+    }
+}
+
+task verifyAgeSkinSources(dependsOn: avatarResources) {
+    doLast {
+        def manifest = new groovy.json.JsonSlurper().parse(file('assets/metadata/age-skin-prototype.json'))
+        if (manifest.schema != 1 || manifest.skins.size() != 6
+                || manifest.skins.collect { it.sex + '/' + it.preset }.toSet() !=
+                   ['male/young','male/middle','male/old','female/young','female/middle','female/old'].toSet())
+            throw new GradleException('Invalid adult skin provenance manifest')
+        def packed = zipTree(avatarResources.archiveFile.get().asFile)
+        manifest.skins.each { row ->
+            def skin = file(row.runtime)
+            def digest = java.security.MessageDigest.getInstance('SHA-256').digest(skin.bytes).encodeHex().toString()
+            if (digest != row.sha256) throw new GradleException('Age skin hash mismatch: ' + row.runtime)
+            def entry = packed.matching { include 'avatar2/body/' + skin.name }.files
+            if (entry.size() != 1 || !java.util.Arrays.equals(entry.first().bytes, skin.bytes))
+                throw new GradleException('Age skin pack mismatch: ' + skin.name)
+        }
+    }
+}
+dist.dependsOn verifyAgeSkinSources
+dist.dependsOn verifyCanonicalBodies
+
+// Unlike ordinary unit tests, this process deliberately has NO main resources
+// on its parent classpath. It uses Wurm's real shared classloader for the JAR.
+task verifyDashboardRuntime(type: JavaExec, dependsOn: ['jar', 'testClasses']) {
+    classpath = files(sourceSets.test.output.classesDirs) + files(clientLibraries)
+    main = 'org.avatar2.lab.DashboardJarProbe'
+    args jar.archiveFile.get().asFile.absolutePath
+    workingDir file("${buildDir}/dashboard-runtime-client")
+    doFirst {
+        // This is a build fixture, NOT the user's game/mods installation.
+        workingDir.mkdirs()
+        copy { from jar; into new File(workingDir, 'mods/avatar2') }
+        copy { from 'mods/avatar2.properties'; into new File(workingDir, 'mods') }
+    }
+}
+
+task verifyWalkMotionRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.WalkHookRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+
+task verifyGameplayStartRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.GameplayStartRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyGameplayStartRuntime
+
+task verifyHeadRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.GeometryHookRuntimeProbe'
+    args projectDir.absolutePath, 'headOnly'
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyHeadRuntime
+
+task verifyBodyAgeRuntime(type: JavaExec, dependsOn: ['classes','testClasses']) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.GeometryHookRuntimeProbe'
+    args projectDir.absolutePath, 'ageOnly'
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyBodyAgeRuntime
+
+task verifyHairRuntime(type: JavaExec, dependsOn: ['classes','testClasses']) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.HairHookRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyHairRuntime
+
+task verifyGeometryRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses', 'avatarResources']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.GeometryHookRuntimeProbe'
+    args projectDir.absolutePath, avatarResources.archiveFile.get().asFile.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+
+task verifyEquipmentSocketsRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.EquipmentSocketHookRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
 }
 
 build.dependsOn verifyArtifact
+
+task verifyShieldWalkRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.ShieldWalkHookRuntimeProbe'
+    args projectDir.absolutePath, 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/packs/graphics.jar'
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+// Shield clearance/strap checks are an explicit manual task, outside routine ZIP builds.
 
 task probeVanillaRig(type: JavaExec, dependsOn: classes) {
     classpath = sourceSets.main.runtimeClasspath + files(clientLibraries)
@@ -155,6 +344,15 @@ task probeVanillaRig(type: JavaExec, dependsOn: classes) {
             'player/Male_1_04.wom'
 }
 
+task bakeMorphBanks(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    main = 'org.avatar2.client.GeometryHookRuntimeProbe'
+    args projectDir.absolutePath, 'bakeMorphs'
+}
+
 task verifyGeneratedBodies(type: JavaExec, dependsOn: classes) {
     classpath = sourceSets.main.runtimeClasspath + files(clientLibraries)
     if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
@@ -167,3 +365,81 @@ task verifyGeneratedBodies(type: JavaExec, dependsOn: classes) {
         include '*.dae'
     }.files.sort { it.name }.collect { it.absolutePath }
 }
+
+task verifyAvatarStability(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    main = 'org.avatar2.client.AvatarStabilityProbe'
+    args projectDir.absolutePath
+}
+
+task reproduce060Deadlock(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+    main = 'org.avatar2.client.AvatarStabilityProbe'
+    args projectDir.absolutePath, file('build/libs/avatar2-0.6.0.jar').absolutePath
+}
+
+dist.dependsOn verifyAvatarStability
+
+task verifyCameraRuntime(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.CameraHookRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+
+dist.dependsOn verifyCameraRuntime
+
+task verifyPortraitHeightRuntime(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.PortraitHeightRuntimeProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyPortraitHeightRuntime
+
+task reproducePortraitHeight080(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.PortraitHeightRuntimeProbe'
+    args projectDir.absolutePath, 'reproduce'
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+
+task verifyStudioRuntime(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.StudioPreviewProbe'
+    args projectDir.absolutePath
+    systemProperty 'java.library.path',
+            'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyStudioRuntime
+
+task verifyAgeSkinRuntime(type: JavaExec, dependsOn: ['classes', 'testClasses', 'avatarResources']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.AgeSkinHookRuntimeProbe'
+    args projectDir.absolutePath, avatarResources.archiveFile.get().asFile.absolutePath
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+dist.dependsOn verifyAgeSkinRuntime
+
+task reproduceAgeSkin090(type: JavaExec, dependsOn: ['classes', 'testClasses', 'avatarResources']) {
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.output + files(clientLibraries)
+    if (wurmJavaFx.isFile()) classpath += files(wurmJavaFx)
+    main = 'org.avatar2.client.AgeSkinHookRuntimeProbe'
+    args projectDir.absolutePath, avatarResources.archiveFile.get().asFile.absolutePath, 'legacy'
+    systemProperty 'java.library.path', 'C:/Program Files (x86)/Steam/steamapps/common/Wurm Unlimited/WurmLauncher/nativelibs'
+}
+
+ext.chamomiloUpdate = [id: 'avatar2', name: 'Avatar 2.0', repo: 'chamomilo/Wurm-avatar-2.0',
+    asset: 'avatar2-{version}.zip', properties: 'mods/avatar2.properties',
+    main: 'src/main/java/org/avatar2/client/Avatar2Mod.java', sourceArchives: ['sourceDist']]
+apply from: 'gradle/chamomilo-updater.gradle'

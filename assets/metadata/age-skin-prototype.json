@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "license": "CC0-1.0",
+  "pixelTransform": "none; exact source PNG bytes",
+  "materialPolicy": "retain the approved Avatar material; do not apply source mhmat colours",
+  "skins": [
+    {
+      "sex": "male",
+      "preset": "young",
+      "source": "assets/source/makehuman/system-assets/skins/young_caucasian_male/young_lightskinned_male_diffuse.png",
+      "runtime": "assets/runtime/body/young_lightskinned_male_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "862a26e335e958b70534cb5f0d7c47ef30ab148a56c42b3e9da969cf76f12963",
+      "sourceMaterialDiffuseColor": "1.0 1.0 1.0"
+    },
+    {
+      "sex": "male",
+      "preset": "middle",
+      "source": "assets/source/makehuman/system-assets/skins/middleage_caucasian_male/middleage_lightskinned_male_diffuse.png",
+      "runtime": "assets/runtime/body/middleage_lightskinned_male_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "3f94f3f6a5cab92dedf5cce392a87332312fc435f1cb44c6e7b897daef9a5fbb",
+      "sourceMaterialDiffuseColor": "1.0 0.95 0.85"
+    },
+    {
+      "sex": "male",
+      "preset": "old",
+      "source": "assets/source/makehuman/system-assets/skins/old_caucasian_male/old_lightskinned_male_diffuse.png",
+      "runtime": "assets/runtime/body/old_lightskinned_male_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "dfb2310ed3e0ad024ea7a3ad321215e2e9e2994cca64043d9f3d07c6543ec847",
+      "sourceMaterialDiffuseColor": "0.5 0.5 0.5"
+    },
+    {
+      "sex": "female",
+      "preset": "young",
+      "source": "assets/source/makehuman/system-assets/skins/young_caucasian_female/young_lightskinned_female_diffuse.png",
+      "runtime": "assets/runtime/body/young_lightskinned_female_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "b2a6ac8cd4f9febdb447368e29c76cd68410bb66e46d9dcfa2d5f75126eea8fc",
+      "sourceMaterialDiffuseColor": "1.0 1.0 1.0"
+    },
+    {
+      "sex": "female",
+      "preset": "middle",
+      "source": "assets/source/makehuman/system-assets/skins/middleage_caucasian_female/middleage_lightskinned_female_diffuse.png",
+      "runtime": "assets/runtime/body/middleage_lightskinned_female_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "bcb9c2c8ace23880bc4407602a249abbcf4608b6ba0894e423b031913012a363",
+      "sourceMaterialDiffuseColor": "1.0 1.0 1.0"
+    },
+    {
+      "sex": "female",
+      "preset": "old",
+      "source": "assets/source/makehuman/system-assets/skins/old_caucasian_female/old_lightskinned_female_diffuse.png",
+      "runtime": "assets/runtime/body/old_lightskinned_female_diffuse.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "mode": "RGB",
+      "sha256": "00c45246c145562b917371e92de44a1fe394bc5f4bd91418addf24b6adff5e9d",
+      "sourceMaterialDiffuseColor": "1.0 1.0 1.0"
+    }
+  ]
+}

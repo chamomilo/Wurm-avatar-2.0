@@ -5,6 +5,8 @@ local.properties
 *.log
 __pycache__/
 *.pyc
+working/
+AGENTS.md
 libs/*.jar
 *lab-session*.json
 axis-calibration*.json

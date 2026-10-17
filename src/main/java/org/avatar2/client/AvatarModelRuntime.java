@@ -15,9 +15,9 @@ import java.util.logging.Logger;
 final class AvatarModelRuntime {
     private static final Logger LOG = Logger.getLogger("Avatar2");
     private static PlayerBodyRenderable appliedBody;
-    private static int appliedRevision = -1;
     private static String appliedModel;
     private static AbstractModelData preparedModelData;
+    private static AbstractModelData preparedPaperModelData;
 
     private AvatarModelRuntime() { }
 
@@ -29,17 +29,18 @@ final class AvatarModelRuntime {
         AvatarProfile profile = AvatarRuntimeState.profile();
         String model = modelFor(profile);
         int revision = AvatarRuntimeState.revision();
-        if (body == appliedBody && revision == appliedRevision
-                && model.equals(appliedModel)) {
+        // Appearance is read by the animation worker. Slider revisions must not
+        // reload the same body, discard its private rig or restart Lab commands.
+        if (body == appliedBody && model.equals(appliedModel)) {
             preparePlayerBaking(body, model);
             return;
         }
         if (profile.enabled && !AvatarResources.ensureLoaded()) return;
         body.setBodyModel(model);
         appliedBody = body;
-        appliedRevision = revision;
         appliedModel = model;
         preparedModelData = null;
+        preparedPaperModelData = null;
         preparePlayerBaking(body, model);
         LOG.info("Applied live body model " + model + " at revision " + revision);
     }
@@ -62,8 +63,19 @@ final class AvatarModelRuntime {
         if (!path.startsWith("avatar2/body/")) return;
         AbstractModelData data = wrapper.getModelData();
         if (data instanceof ColladaModelData) {
-            org.avatar2.lab.AnimationLab.registerLocalModel(((ColladaModelData)data).getModel());
+            ColladaModel liveModel = ((ColladaModelData)data).getModel();
+            org.avatar2.lab.AnimationLab.registerLocalModel(liveModel);
+            AvatarShieldWalk.reconcile(body, liveModel);
         }
+        ModelResourceWrapper paper = body.getPaperDollModel();
+        org.avatar2.lab.AnimationLab.registerPaperModel(paper != null && paper.isLoaded()
+                && paper.isCollada() && paper.getModelData() instanceof ColladaModelData
+                && paper.getResourceUrl().getFilePath().replace('\\', '/').startsWith("avatar2/body/")
+                ? ((ColladaModelData)paper.getModelData()).getModel() : null);
+        // The loader's independent paper-doll copy can complete after the world
+        // body. Bake it once when ready, and retry while its textures are pending.
+        if(paper!=null && paper.isLoaded() && paper.getModelData()!=preparedPaperModelData
+                && Avatar2Mod.prepareAvatarPaperDoll(paper))preparedPaperModelData=paper.getModelData();
         if (data == null || data == preparedModelData) return;
         if (!(data instanceof ColladaModelData)) {
             LOG.warning("Avatar body resource is not COLLADA; direct rendering was not enabled");
@@ -82,10 +94,8 @@ final class AvatarModelRuntime {
         if (!profile.enabled) {
             return "model.creature.humanoid.human.player." + sex;
         }
-        boolean bodybuilder = profile.preset == AvatarProfile.Preset.BODYBUILDER
-                || profile.preset == AvatarProfile.Preset.CUSTOM
-                && (profile.muscle >= 0.90f || profile.mass >= 0.68f);
-        return "model.avatar2.body." + sex + "."
-                + (bodybuilder ? "bodybuilder" : "athletic");
+        // Shapes use one fixed binding per sex. Legacy preset/parameter values
+        // must never silently select the retired Athletic topology.
+        return "model.avatar2.body." + sex + ".bodybuilder";
     }
 }

@@ -1,0 +1,49 @@
+{
+  "version": "0.8.1",
+  "metric": "RMS Euclidean endpoint displacement over optimized native body vertices; 0% is original",
+  "comparison": "0.8.0 CC0 MPFB authored endpoints; same approved bind/topology",
+  "rows": [
+    {
+      "body": "male-bodybuilder",
+      "shape": "mpfb-athletic",
+      "previousRmsMetres": 0.003019837469214308,
+      "rmsMetres": 0.008095236146739787,
+      "ratio": 2.680686039982801
+    },
+    {
+      "body": "male-bodybuilder",
+      "shape": "mpfb-heavy",
+      "previousRmsMetres": 0.008036729565873351,
+      "rmsMetres": 0.008036729746642131,
+      "ratio": 1.0000000224928285
+    },
+    {
+      "body": "male-bodybuilder",
+      "shape": "mpfb-older",
+      "previousRmsMetres": 0.01006681642256414,
+      "rmsMetres": 0.015488791754987645,
+      "ratio": 1.538598808683
+    },
+    {
+      "body": "female-bodybuilder",
+      "shape": "mpfb-athletic",
+      "previousRmsMetres": 0.0027262421229037157,
+      "rmsMetres": 0.006774603523489585,
+      "ratio": 2.4849603293026545
+    },
+    {
+      "body": "female-bodybuilder",
+      "shape": "mpfb-heavy",
+      "previousRmsMetres": 0.006517932557869544,
+      "rmsMetres": 0.006517932718500307,
+      "ratio": 1.0000000246444347
+    },
+    {
+      "body": "female-bodybuilder",
+      "shape": "mpfb-older",
+      "previousRmsMetres": 0.009327238340740356,
+      "rmsMetres": 0.013730885156171525,
+      "ratio": 1.472127617474566
+    }
+  ]
+}

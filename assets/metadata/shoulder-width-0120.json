@@ -1,0 +1,50 @@
+{
+  "version": "0.12.0",
+  "profileSchema": 6,
+  "control": "buildShoulders",
+  "range": [
+    0,
+    1
+  ],
+  "neutral": 0.5,
+  "source": "MPFB torso/measure-shoulder-dist-decr/incr",
+  "eyesExact": true,
+  "otherReleasedTargetsExact": true,
+  "intentionallyChangedTargets": [
+    "Heavy and muscular/full Build torso relief; female cup/full residuals preserved"
+  ],
+  "rows": [
+    {
+      "body": "male-bodybuilder",
+      "target": "build-shoulders-narrow",
+      "maxDisplacementMetres": 0.013840332627296448,
+      "rmsDisplacementMetres": 0.0034663957322353133,
+      "changedVertices": 2461,
+      "bankSha256": "196fadfa2f6280941107cc880aa1d28d5bd21a661a238794aa58b00fa00aa484"
+    },
+    {
+      "body": "male-bodybuilder",
+      "target": "build-shoulders-wide",
+      "maxDisplacementMetres": 0.0258762389421463,
+      "rmsDisplacementMetres": 0.006373985061784807,
+      "changedVertices": 2457,
+      "bankSha256": "196fadfa2f6280941107cc880aa1d28d5bd21a661a238794aa58b00fa00aa484"
+    },
+    {
+      "body": "female-bodybuilder",
+      "target": "build-shoulders-narrow",
+      "maxDisplacementMetres": 0.01370568573474884,
+      "rmsDisplacementMetres": 0.0029737602138152127,
+      "changedVertices": 1521,
+      "bankSha256": "156dcd72797d4dc286ab63f327d7989fa0d73b91b8ee0b75da7beeea2e9ff5e0"
+    },
+    {
+      "body": "female-bodybuilder",
+      "target": "build-shoulders-wide",
+      "maxDisplacementMetres": 0.025469571352005005,
+      "rmsDisplacementMetres": 0.005480790827051912,
+      "changedVertices": 1521,
+      "bankSha256": "156dcd72797d4dc286ab63f327d7989fa0d73b91b8ee0b75da7beeea2e9ff5e0"
+    }
+  ]
+}

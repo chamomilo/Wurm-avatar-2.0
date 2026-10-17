@@ -1,4 +1,2 @@
-model.avatar2.body.male.athletic = avatar2/body/male-athletic.dae
 model.avatar2.body.male.bodybuilder = avatar2/body/male-bodybuilder.dae
-model.avatar2.body.female.athletic = avatar2/body/female-athletic.dae
 model.avatar2.body.female.bodybuilder = avatar2/body/female-bodybuilder.dae

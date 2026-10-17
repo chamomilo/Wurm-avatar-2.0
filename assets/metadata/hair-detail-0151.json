@@ -1,0 +1,251 @@
+{
+  "version": "0.15.1",
+  "nativeAssetsPackaged": false,
+  "baseFit": "hair-fit-0150.json",
+  "refinement": {
+    "edgeSubdivisions": 3,
+    "trianglesPerNativeTriangle": 9,
+    "maxNormalDisplacementMetres": 0.004,
+    "originalTriangleProjectionAndWinding": "preserved",
+    "nativeUVAndMaterial": "preserved",
+    "sharedNativeBuffers": "unchanged",
+    "rebuild": "once per private hairstyle",
+    "sharedTriangleEdges": "exact native positions; no new gaps"
+  },
+  "cranialSurface": {
+    "source": "own released Avatar cranial triangles with full head weights",
+    "subdivisionsPerSourceTriangle": 4,
+    "offsetMetres": 0.0008,
+    "contour": "bind-space central peak, recessed temples, fine irregular edge; barycentric mapping to current head",
+    "centralPeakRangeFraction": 0.055,
+    "templeRecessionRangeFraction": 0.055,
+    "edgeVariationRangeFraction": 0.009,
+    "UV": "longitudinal swept flow over measured native opaque strand regions",
+    "texturePixelSafetyMargin": 8,
+    "rows": "both DDS orientations",
+    "taperedRoots": {
+      "region": "forehead and temples",
+      "lengthMetres": [
+        0.0014,
+        0.003
+      ],
+      "placement": "surface tangent below clipped hairline",
+      "rebuild": "appearance changes only"
+    },
+    "equivalentWorldPortraitBufferReuse": true
+  },
+  "textureRegions": [
+    {
+      "sex": "male",
+      "style": 1,
+      "pixels": [
+        93,
+        131,
+        113,
+        250
+      ],
+      "uv": [
+        0.1826171875,
+        0.2568359375,
+        0.4013671875,
+        0.7431640625
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "male",
+      "style": 2,
+      "pixels": [
+        308,
+        178,
+        82,
+        156
+      ],
+      "uv": [
+        0.6025390625,
+        0.3486328125,
+        0.7607421875,
+        0.6513671875
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "male",
+      "style": 3,
+      "pixels": [
+        101,
+        118,
+        136,
+        276
+      ],
+      "uv": [
+        0.1982421875,
+        0.2314453125,
+        0.4619140625,
+        0.7685546875
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "male",
+      "style": 4,
+      "pixels": [
+        94,
+        111,
+        150,
+        290
+      ],
+      "uv": [
+        0.1845703125,
+        0.2177734375,
+        0.4755859375,
+        0.7822265625
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "male",
+      "style": 5,
+      "pixels": [
+        207,
+        182,
+        112,
+        148
+      ],
+      "uv": [
+        0.4052734375,
+        0.3564453125,
+        0.6220703125,
+        0.6435546875
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 1,
+      "pixels": [
+        98,
+        199,
+        274,
+        114
+      ],
+      "uv": [
+        0.1923828125,
+        0.3896484375,
+        0.7255859375,
+        0.6103515625
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 2,
+      "pixels": [
+        316,
+        203,
+        73,
+        106
+      ],
+      "uv": [
+        0.6181640625,
+        0.3974609375,
+        0.7587890625,
+        0.6025390625
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 3,
+      "pixels": [
+        290,
+        145,
+        66,
+        222
+      ],
+      "uv": [
+        0.5673828125,
+        0.2841796875,
+        0.6943359375,
+        0.7158203125
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 4,
+      "pixels": [
+        293,
+        178,
+        143,
+        156
+      ],
+      "uv": [
+        0.5732421875,
+        0.3486328125,
+        0.8505859375,
+        0.6513671875
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 5,
+      "pixels": [
+        243,
+        128,
+        65,
+        256
+      ],
+      "uv": [
+        0.4755859375,
+        0.2509765625,
+        0.6005859375,
+        0.7490234375
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 6,
+      "pixels": [
+        122,
+        186,
+        223,
+        140
+      ],
+      "uv": [
+        0.2392578125,
+        0.3642578125,
+        0.6728515625,
+        0.6357421875
+      ],
+      "alphaMinBothOrientations": 255
+    },
+    {
+      "sex": "female",
+      "style": 7,
+      "pixels": [
+        176,
+        195,
+        158,
+        122
+      ],
+      "uv": [
+        0.3447265625,
+        0.3818359375,
+        0.6513671875,
+        0.6181640625
+      ],
+      "alphaMinBothOrientations": 255
+    }
+  ],
+  "runtime": {
+    "worldPaperCpuGpuPoses": 5184,
+    "styleScalpPlacements": 15552,
+    "nativeStyles": 12,
+    "cameraDrawScopes": 1008,
+    "completedFrameInterleavings": 2,
+    "GLReview": "manual installation required"
+  }
+}

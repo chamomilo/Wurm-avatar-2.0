@@ -6,9 +6,11 @@ import org.avatar2.core.AvatarProfile;
 import org.avatar2.core.AvatarProfileRepository;
 import org.avatar2.core.MaterialQualitySurface;
 import org.avatar2.core.MaterialReflection;
+import org.avatar2.lab.AnimationLab;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,6 +45,7 @@ public final class AvatarStudioController {
         } catch (IOException error) {
             profile = AvatarProfile.bodybuilder(AvatarProfile.Sex.MALE);
             saved = profile.copy();
+            AvatarRuntimeState.apply(profile);
             status = "Profile read failed; using safe defaults";
             LOG.log(Level.WARNING, "Could not load avatar profile", error);
         }
@@ -58,12 +61,24 @@ public final class AvatarStudioController {
     public synchronized String previewMaterial() { return previewMaterial; }
     public synchronized boolean dirty() { return dirty; }
     public synchronized String status() { return status; }
+    public boolean labEnabled() { return AnimationLab.isEnabled(); }
+    public AnimationLab.StudioControls testControls(boolean visible) { return AnimationLab.studioControls(visible); }
     public synchronized String activeModel() {
         ensureProfile();
         return AvatarModelRuntime.modelFor(profile);
     }
 
     public synchronized float value(String control) {
+        if ("testHeight".equals(control)) return testControls(false).heightDirts;
+        if ("testMix".equals(control)) return testControls(false).shapeMix;
+        if ("testAthletic".equals(control)) return testControls(false).blendAthletic;
+        if ("testHeavy".equals(control)) return testControls(false).blendHeavy;
+        if ("testOlder".equals(control)) return testControls(false).blendOlder;
+        if ("testMuscle".equals(control)) return testControls(false).buildMuscle;
+        if ("testFat".equals(control)) return testControls(false).buildFat;
+        if ("testBreast".equals(control)) return testControls(false).buildBreast;
+        if ("testShoulders".equals(control)) return testControls(false).buildShoulders;
+        if ("testHeadSize".equals(control)) return testControls(false).headSize;
         ensureProfile();
         if ("muscle".equals(control)) return profile.muscle;
         if ("mass".equals(control)) return profile.mass;
@@ -71,6 +86,16 @@ public final class AvatarStudioController {
         if ("shoulders".equals(control)) return profile.shoulders;
         if ("hips".equals(control)) return profile.hips;
         if ("head".equals(control)) return profile.head;
+        if ("heightDirts".equals(control)) return profile.standingHeightMetres()*10;
+        if ("shapeMix".equals(control)) return profile.shapeMix;
+        if ("blendAthletic".equals(control)) return profile.blendAthletic;
+        if ("blendHeavy".equals(control)) return profile.blendHeavy;
+        if ("blendOlder".equals(control)) return profile.blendOlder;
+        if ("buildMuscle".equals(control)) return profile.buildMuscle;
+        if ("buildFat".equals(control)) return profile.buildFat;
+        if ("buildBreast".equals(control)) return profile.sex == AvatarProfile.Sex.FEMALE ? profile.buildBreast : .5f;
+        if ("buildShoulders".equals(control)) return profile.buildShoulders;
+        if ("headSize".equals(control)) return profile.headSize;
         if ("slotReflection".equals(control))
             return profile.reflectionMultiplier(selectedSlot);
         if ("previewQuality".equals(control)) return previewQuality;
@@ -78,6 +103,18 @@ public final class AvatarStudioController {
     }
 
     public synchronized void setValue(String control, float value) {
+        if (control.startsWith("test")) {
+            try {
+                if ("testHeight".equals(control)) AnimationLab.studioHeight(value);
+                else if ("testHeadSize".equals(control)) AnimationLab.studioHeadSize(value);
+                else if ("testMix".equals(control)) AnimationLab.studioMix(value);
+                else if (Arrays.asList("testAthletic","testHeavy","testOlder").contains(control)) AnimationLab.studioContribution(control.substring(4),value);
+                else if (Arrays.asList("testMuscle","testFat","testBreast","testShoulders").contains(control)) AnimationLab.studioBuild(control.substring(4),value);
+                else throw new IllegalArgumentException("Unknown test control");
+                status = "Temporary body test applied; Reset test restores the body";
+            } catch (RuntimeException error) { status = error.getMessage(); }
+            return;
+        }
         ensureProfile();
         if ("muscle".equals(control)) profile.muscle = value;
         else if ("mass".equals(control)) profile.mass = value;
@@ -85,6 +122,20 @@ public final class AvatarStudioController {
         else if ("shoulders".equals(control)) profile.shoulders = value;
         else if ("hips".equals(control)) profile.hips = value;
         else if ("head".equals(control)) profile.head = value;
+        else if ("heightDirts".equals(control)) profile.heightMetres = value/10;
+        else if ("shapeMix".equals(control)) profile.shapeMix = value;
+        else if ("blendAthletic".equals(control)) profile.setBlendContribution(0, value);
+        else if ("blendHeavy".equals(control)) profile.setBlendContribution(1, value);
+        else if ("blendOlder".equals(control)) profile.setBlendContribution(2, value);
+        else if ("buildMuscle".equals(control)) profile.buildMuscle = value;
+        else if ("buildFat".equals(control)) profile.buildFat = value;
+        else if ("buildShoulders".equals(control)) profile.buildShoulders = value;
+        else if ("headSize".equals(control)) profile.headSize = value;
+        else if ("buildBreast".equals(control)) {
+            if (profile.sex != AvatarProfile.Sex.FEMALE || !"proportions".equals(profile.shape))
+                throw new IllegalArgumentException("Breast volume requires female Build");
+            profile.buildBreast = value;
+        }
         else if ("slotReflection".equals(control)) {
             profile.setReflectionMultiplier(selectedSlot, value);
         } else if ("previewQuality".equals(control)) {
@@ -94,23 +145,57 @@ public final class AvatarStudioController {
         } else throw new IllegalArgumentException("Unknown avatar control: " + control);
         profile.preset = AvatarProfile.Preset.CUSTOM;
         profile.normalize();
-        changed("Unsaved profile changes");
+        changed("Previewing body changes; Save keeps them");
     }
 
     public synchronized void perform(String action) {
+        if (action.startsWith("shape:") || action.startsWith("motion:") || action.startsWith("skin:") || action.startsWith("age:") || "testReset".equals(action)) {
+            try {
+                if (action.startsWith("shape:")) AnimationLab.studioShape(action.substring(6));
+                else if (action.startsWith("motion:")) AnimationLab.studioMotion(action.substring(7));
+                else if (action.startsWith("skin:")) AnimationLab.studioSkin(action.substring(5));
+                else if (action.startsWith("age:")) AnimationLab.studioAge(action.substring(4));
+                else AnimationLab.studioReset();
+                status="Temporary test updated; profile is unchanged";
+            } catch (RuntimeException error) { status=error.getMessage(); }
+            return;
+        }
+        if ("labToggle".equals(action)) {
+            toggleLab();
+            return;
+        }
+        if ("labOpen".equals(action)) {
+            openLab();
+            return;
+        }
         ensureProfile();
-        if ("sex".equals(action)) {
+        if (action.startsWith("bodyShape:")) {
+            String shape = action.substring(10);
+            if (!org.avatar2.core.GeometryProbe.SHAPES.contains(shape)) throw new IllegalArgumentException("Unknown body shape");
+            profile.selectShape(shape);
+            profile.preset = AvatarProfile.Preset.CUSTOM;
+            changed("Shape preview updated; Save keeps it");
+        } else if (action.startsWith("bodyAge:")) {
+            if(!"proportions".equals(profile.shape))throw new IllegalStateException("Select Build before body age");
+            profile.agePreset=org.avatar2.core.BodyAge.validate(action.substring(8));
+            profile.ageSkin=profile.agePreset;
+            profile.preset=AvatarProfile.Preset.CUSTOM;
+            changed("Adult body and skin preview updated; Save keeps them");
+        } else if (action.startsWith("bodySkin:")) {
+            profile.ageSkin = org.avatar2.core.AgeSkin.validate(action.substring(9));
+            profile.preset = AvatarProfile.Preset.CUSTOM;
+            changed("Skin preview updated; Save keeps it");
+        } else if ("nativeHeight".equals(action)) {
+            profile.heightMetres = 0;
+            changed("Original height restored; not saved");
+        } else if ("sex".equals(action)) {
             profile.sex = profile.sex == AvatarProfile.Sex.MALE
                     ? AvatarProfile.Sex.FEMALE : AvatarProfile.Sex.MALE;
             profile.preset = AvatarProfile.Preset.CUSTOM;
-            changed("Body sex changed; press Apply to rebuild the live avatar");
+            changed("Body sex preview updated; Save keeps it");
         } else if ("enabled".equals(action)) {
             profile.enabled = !profile.enabled;
             changed(profile.enabled ? "Avatar 2.0 enabled" : "Vanilla body selected");
-        } else if ("athletic".equals(action)) {
-            replace(AvatarProfile.athletic(profile.sex), "Athletic preset selected");
-        } else if ("bodybuilder".equals(action)) {
-            replace(AvatarProfile.bodybuilder(profile.sex), "Bodybuilder preset selected");
         } else if (action.startsWith("toggle:")) {
             toggle(action.substring("toggle:".length()));
         } else if (action.startsWith("slot:")) {
@@ -122,11 +207,18 @@ public final class AvatarStudioController {
         } else if ("apply".equals(action)) {
             apply();
         } else if ("save".equals(action)) {
-            save();
+            save(profile.copy(), false);
+        } else if ("saveTestedBody".equals(action)) {
+            try {
+                save(AnimationLab.studioProfile(), true);
+            } catch (RuntimeException error) {
+                status = "Body not saved: " + error.getMessage();
+            }
         } else if ("revert".equals(action)) {
             profile = saved.copy();
             AvatarRuntimeState.apply(profile);
             dirty = false;
+            clearTests();
             status = "Reverted to last saved profile";
         } else if ("reset".equals(action)) {
             replace(AvatarProfile.bodybuilder(profile.sex), "Muscular defaults restored; not saved");
@@ -136,6 +228,34 @@ public final class AvatarStudioController {
     public synchronized MaterialQualitySurface.Sample qualitySample() {
         return MaterialQualitySurface.evaluate(previewMaterial,
                 previewQuality, profile.reflectionMultiplier(selectedSlot));
+    }
+
+    private void toggleLab() {
+        if (AnimationLab.isEnabled()) {
+            AnimationLab.stop();
+            status = "Animation Lab off; returning to game motion";
+            return;
+        }
+        try {
+            AnimationLab.start();
+            status = "Animation Lab on; Open Lab shows the controls";
+        } catch (Exception error) {
+            status = "Animation Lab could not start; see client log";
+            LOG.log(Level.WARNING, "Could not start Animation Lab", error);
+        }
+    }
+
+    private void openLab() {
+        try {
+            AnimationLab.start();
+            AnimationLab.open();
+            status = "Animation Lab on; controls opened in browser";
+        } catch (Exception error) {
+            status = AnimationLab.isEnabled()
+                    ? "Animation Lab on; browser could not open"
+                    : "Animation Lab could not start; see client log";
+            LOG.log(Level.WARNING, "Could not open Animation Lab", error);
+        }
     }
 
     private void toggle(String name) {
@@ -153,22 +273,29 @@ public final class AvatarStudioController {
     private void apply() {
         profile.normalize();
         AvatarRuntimeState.apply(profile);
+        clearTests();
         status = "Applied to Avatar 2.0 runtime (revision "
                 + AvatarRuntimeState.revision() + ")";
     }
 
-    private void save() {
+    private void save(AvatarProfile chosen, boolean keepTests) {
         try {
-            profile.normalize();
-            repository.save(profile);
+            chosen.normalize();
+            repository.save(chosen);
+            profile = chosen;
             saved = profile.copy();
             AvatarRuntimeState.apply(profile);
+            if (!keepTests) clearTests();
             dirty = false;
             status = "Saved and applied " + repository.file().getName();
         } catch (IOException error) {
             status = "Save failed; see client log";
             LOG.log(Level.WARNING, "Could not save avatar profile", error);
         }
+    }
+
+    private void clearTests() {
+        if (AnimationLab.isEnabled() && AnimationLab.studioControls(false).ready) AnimationLab.studioReset();
     }
 
     private String qualitySummary() {
@@ -185,6 +312,8 @@ public final class AvatarStudioController {
 
     private void changed(String message) {
         profile.normalize();
+        AvatarRuntimeState.apply(profile);
+        clearTests();
         dirty = true;
         status = message;
     }

@@ -109,7 +109,7 @@ def derivative(plus, minus, base, radians):
 
 
 def restorable(command):
-    return {key: copy.deepcopy(command[key]) for key in ("preview", "corrections", "pose")}
+    return {key: copy.deepcopy(command[key]) for key in ("preview", "corrections", "pose", "geometry", "heightScale", "ageSkin") if key in command}
 
 
 def measure(connector, args):
@@ -178,12 +178,50 @@ def record(connector, args):
             connector.command(saved, revision)
 
 
+def height_command(value, unit, schema):
+    if not math.isfinite(value):
+        raise ValueError("Height must be finite")
+    if unit == "dirt":
+        if not 13 <= value <= 20:
+            raise ValueError("Height must be in 13..20 dirt")
+        return {"heightDirts": value}
+    if unit == "metres":
+        if not 1.3 <= value <= 2:
+            raise ValueError("Height must be in 1.3..2.0 metres")
+        return {"heightMetres": value}
+    lower, upper = schema["heightScaleRange"]
+    scale = value / 100
+    if not lower - 1e-7 <= scale <= upper + 1e-7:
+        raise ValueError(f"This body allows {lower*100:.2f}..{upper*100:.2f} percent (13..20 dirt)")
+    return {"heightScale": scale}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", help="Optional exact session JSON path (contains a secret; never publish it)")
     commands = parser.add_subparsers(dest="action", required=True)
     commands.add_parser("state")
     commands.add_parser("reset")
+    skin = commands.add_parser("skin", help="Temporary adult diffuse skin; independent of body shape and saved profiles")
+    skin.add_argument("preset", choices=["original", "young", "middle", "old"])
+    height = commands.add_parser("height", help="Temporary proportional Lab height relative to the current approved body")
+    height.add_argument("value", type=float, help="13..20 dirt or 1.3..2.0 metres; percent limits depend on the body")
+    height.add_argument("--unit", choices=["percent", "metres", "dirt"], default="percent",
+                        help="Default: percent; 100 restores the current body's original height")
+    geometry = commands.add_parser("geometry", help="Temporary stage-0 diagnostic/authored geometry; does not save a body profile")
+    geometry.add_argument("--width", type=float, default=0)
+    geometry.add_argument("--depth", type=float, default=0)
+    geometry.add_argument("--shape", choices=["none", "mpfb-athletic", "mpfb-heavy", "mpfb-older", "blend", "proportions"], default="none")
+    geometry.add_argument("--mix", type=float, help="Authored endpoint blend 0..1; defaults to 1 with --shape, otherwise 0")
+    geometry.add_argument("--athletic", type=float, default=0, help="Blend contribution 0..1")
+    geometry.add_argument("--heavy", type=float, default=0, help="Blend contribution 0..1")
+    geometry.add_argument("--older", type=float, default=0, help="Blend contribution 0..1")
+    geometry.add_argument("--muscle", type=float, default=1, help="Build muscle 0..1; 1 is Original")
+    geometry.add_argument("--fat", type=float, default=0, help="Build fullness 0..1; 0 is Original")
+    geometry.add_argument("--head-size", type=float, default=.5, help="Head size 0..1; .5 original, 92..108% actual scale")
+    geometry.add_argument("--age", choices=["young", "middle", "old"], default="young", help="Build adult body preset; skin remains a separate command")
+    geometry.add_argument("--shoulders", type=float, default=.5, help="Build shoulder width 0..1; .5 original")
+    geometry.add_argument("--breast", type=float, default=.5, help="Female Build breast volume 0..1; .5 retains the current build")
     command = commands.add_parser("command")
     command.add_argument("json_file")
     capture = commands.add_parser("capture")
@@ -201,6 +239,22 @@ def main():
     rec.add_argument("--images", action="store_true")
     rec.add_argument("--output", default="walk-observation")
     args = parser.parse_args()
+    if args.action == "height" and not math.isfinite(args.value):
+        parser.error("Height must be finite")
+    if args.action == "geometry" and (not -1 <= args.width <= 1 or not -1 <= args.depth <= 1):
+        parser.error("Geometry probe width/depth must be finite and in -1..1")
+    if args.action == "geometry":
+        args.mix = (0 if args.shape == "none" else 1) if args.mix is None else args.mix
+        if not 0 <= args.mix <= 1 or args.shape == "none" and args.mix != 0:
+            parser.error("Authored mix must be finite and in 0..1; none requires zero mix")
+        if any(not 0 <= value <= 1 for value in (args.athletic, args.heavy, args.older)):
+            parser.error("Blend contributions must be finite and in 0..1")
+        if args.shape != "blend" and any((args.athletic, args.heavy, args.older)):
+            parser.error("Contributions require --shape blend")
+        if any(not 0 <= value <= 1 for value in (args.muscle, args.fat, args.breast, args.shoulders, args.head_size)):
+            parser.error("Build controls must be finite and in 0..1")
+        if args.shape != "proportions" and (args.muscle != 1 or args.fat != 0 or args.breast != .5 or args.shoulders != .5 or args.age != "young"):
+            parser.error("Build controls require --shape proportions")
     if args.action == "probe" and (not .1 <= args.angle <= 10 or not 0 <= args.phase <= 1 or args.clip == "game"):
         parser.error("Probe needs a fixed clip/bind, phase 0..1 and angle 0.1..10 degrees")
     if args.action == "record" and (not 2 <= args.frames <= 240 or args.clip in ("game", "bind")):
@@ -210,6 +264,22 @@ def main():
         print(json.dumps(connector.state(), indent=2))
     elif args.action == "reset":
         print("Revision", connector.command({"reset": True}))
+    elif args.action == "skin":
+        print("Revision", connector.command({"ageSkin": args.preset}))
+    elif args.action == "height":
+        initial = connector.state()
+        revision = connector.command(height_command(args.value, args.unit, initial["schema"]), initial["command"]["revision"])
+        state = connector.settled(revision)
+        print(json.dumps(state["telemetry"].get("height", {}), indent=2))
+    elif args.action == "geometry":
+        revision = connector.command({"geometry": {"torsoWidth": args.width, "torsoDepth": args.depth,
+                                                   "shape": args.shape, "shapeMix": args.mix,
+                                                   "blendAthletic": args.athletic, "blendHeavy": args.heavy,
+                                                   "blendOlder": args.older,
+                                                   "buildMuscle": args.muscle, "buildFat": args.fat,
+                                                   "buildBreast": args.breast, "buildShoulders": args.shoulders, "headSize": args.head_size, "agePreset": args.age}})
+        state = connector.settled(revision)
+        print(json.dumps(state["telemetry"].get("geometry", []), indent=2))
     elif args.action == "command":
         print("Revision", connector.command(json.loads(Path(args.json_file).read_text(encoding="utf-8-sig"))))
     elif args.action == "capture":

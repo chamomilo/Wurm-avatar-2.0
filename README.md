@@ -1,99 +1,107 @@
 # Avatar 2.0
 
-Client-side Wurm Unlimited avatar modernization project. The first playable
-prototype supplies higher-detail muscular male/female bodies, a native
-**Avatar Studio** panel, persistent character profiles and custom human idle,
-walk and run locomotion. Armour is deliberately excluded from this visual-approval
-slice; its fitting, coverage and material contracts are retained for the next stage.
+A client mod for **Wurm Unlimited** with customizable male and female avatars,
+matching portraits, fitted native hairstyles and new idle, walk and run animations.
 
-Open the panel with `/avatar2` or through HUD settings. `/avatar2 reset` restores
-the muscular Bodybuilder preset; `/avatar2 save` writes the current profile.
+**Current release: 0.15.2** · [Download the installable ZIP](https://github.com/chamomilo/Wurm-avatar-2.0/releases/latest)
 
-Version 0.2.0 adds an opt-in **Animation Lab**: `/avatar2 lab on` starts the local
-authenticated connector, `/avatar2 lab open` opens live controls, and
-`/avatar2 lab off` restores ordinary animation. It exposes post-blend corrections,
-actual engine matrices, fixed-phase preview and game-only framebuffer captures.
-The Python companion measures X/Y/Z responses through the real Wurm FK pipeline.
-See [Animation Lab](docs/ANIMATION_LAB.md) for startup, API and current limitations.
-Existing production locomotion assets are unchanged in this release.
+![Avatar Studio: appearance and temporary Lab controls](docs/images/avatar-studio.png)
 
-## Locomotion
+*Avatar Studio's native Lab view. This interface preview uses the mod's actual
+controls with an offline rendering backend.*
 
-The body does not reuse Wurm's walk or run. CC0 source motion is retargeted onto
-the Avatar 2.0 anatomy and exported as in-place Wurm Collada clips: a 1.30-second
-relaxed walk, a dedicated 0.90-second jog and a 2.47-second breathing idle.
-Pelvis translation, spine counter-rotation, arm swing, knee flex and foot roll are preserved. Wurm
-continues to control actual world movement. Vanilla animation matrices are not
-applied to the anatomical rig; unsupported states remain on a safe Avatar pose
-until their dedicated replacements are ready. Version 0.1 deliberately ships
-only these three master clips; riding, sitting, combat and work actions are later
-animation tasks. Idle Animation Studio also registers `gait.walk.relaxed` and
-`gait.jog` for comparison. The rejected `walk formal`, `sprint` and `crouch`
-clips are deliberately not registered. The active `walk` key uses the approved
-relaxed walk, while `run` uses the corrected jog. The hybrid retarget keeps the pelvis, spine and
-neck in MakeHuman's native reference space. Clavicle deltas are transferred in
-armature/world axes so the walk's shoulder yaw remains forward/back motion
-instead of becoming an up/down shoulder roll; arm and leg bones follow the
-approved donor limb directions from the source clip. The stronger jog motion
-uses world-axis torso deltas and levelled clavicle directions so its yaw remains
-a natural running twist instead of becoming a sideways spine bend or shoulder
-hike. This avoids both the old
-deformed torso/shoulder silhouette and the sideways arms and knees created by
-applying one conversion rule to every bone.
+## Customize your avatar
 
-## Compatibility contract
+- Adjust height from **1.3 to 2.0 metres**, head size and shoulder width.
+- Set muscle and fullness independently, with an additional female breast-volume control.
+- Choose **Young, Middle or Old** adult body and skin presets.
+- Use Original, Athletic, Heavy and Older shapes, or blend their contributions.
+- Preview changes immediately, save your appearance, or return to the saved profile.
+- Keep Wurm's hairstyle and colour choices. Hair follows the head, body shape and height.
+- Try poses and motion in the temporary Lab, then reset to your saved appearance.
 
-Avatar 2.0 keeps Wurm's player scale, world origin and gameplay state contract,
-but it no longer injects Wurm's 91-bone skeleton into the body. Each body retains
-its native 53-bone deform rig. A single non-deforming `NullCamera0` leaf socket
-provides Wurm's eye anchor, and future equipment uses a separate socket/weight
-adapter. Height is deliberately limited to 96-104% in the UI, while shipping
-runtime bodies must satisfy the stricter metrics in
-`assets/metadata/vanilla-scale-contract.properties`.
+![Native hairstyles fitted to male and female Avatar heads](docs/images/hairline.png)
 
-The runtime replaces Wurm's broken four-slot weight normalization while an
-Avatar 2.0 body is inside the Collada importer. This prevents the importer from
-overwriting the first skin weight of the following vertex, which creates
-missing-looking triangular cracks around bending joints. The workaround is
-restricted to `avatar2/body/` and does not alter vanilla models or source body
-files. Vanilla hair is temporarily hidden for Avatar bodies until the native rig
-has a compatible helmet/hair socket; otherwise it is drawn at the model root.
+*Offline model preview of the fitted native hairstyles and shaped hairline.
+The game supplies its own hairstyle meshes and textures at runtime.*
 
-Corrected armour belongs in `assets/working/armor/corrected/<family>/<sex>/` and
-the game-ready output in `assets/runtime/armor/corrected/`. Every piece also needs
-coverage metadata so upper layers can hide lower geometry instead of merely
-pushing it inward.
+[View all hairstyle previews](docs/images/hairstyles.png) · [View adult body presets](docs/images/body-age.png)
 
-## Reflections
+## Install or update
 
-The material work is based on the proven `armor-material-colors` shader path.
-Reflection is evaluated independently for head, shoulders, torso, arms, hands,
-legs, feet and shield. It is zero through QL 50, follows a quadratic ramp to QL
-95, then remains capped. Gold and Silver cap at 30%; other metallic materials cap
-at 16%. The game protocol does not transmit armour QL for remote players, so their
-quality must come from a server-side appearance extension or an explicit fallback;
-the client never invents a remote quality silently.
+Requires Wurm Unlimited with a compatible **Wurm Client Mod Launcher**.
+The release contains the mod; it does not include the game or mod launcher.
 
-## Developer setup
+1. Close Wurm Unlimited and back up your existing Avatar profile, normally
+   `WurmLauncher/mods/avatar2/avatar-profile.properties`.
+2. Download **avatar2-0.15.2.zip** from [Releases](https://github.com/chamomilo/Wurm-avatar-2.0/releases/latest).
+   Use the installable ZIP rather than GitHub's source-code download.
+3. Extract the ZIP into **WurmLauncher**, merging its `mods` folder. Replace the
+   existing `mods/avatar2.properties` when updating. Keep your saved profile.
+4. Start the client. Open **Avatar Studio** through HUD Settings, or enter
+   `/avatar2` in the F1 console.
 
-The repository uses Java 8 and pinned Wurm client libraries in `libs/`. Portable
-Blender 4.5 LTS and MPFB 2.0.17 are installed under `tools/` and `vendor/` by the
-asset setup workflow. Run:
+The installer contains exactly four files:
 
-```powershell
-$env:JAVA_HOME='C:\projects\tools\temurin8\jdk8u492-b09'
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-.\gradlew.bat clean test dist
+```text
+README.txt
+mods/avatar2.properties
+mods/avatar2/avatar2-0.15.2.jar
+mods/avatar2/avatar2-resources-0.15.2.jar
 ```
 
-See `docs/ARCHITECTURE.md`, `docs/ANIMATION_CONTRACT.md`, `docs/LOCOMOTION.md`,
-`docs/ARMOR_PIPELINE.md` and `docs/THIRD_PARTY_ASSETS.md` for the asset and
-licensing contracts.
+The descriptor points to the matching JAR and resource pack. Old unreferenced
+versioned JARs are unnecessary and can be removed manually after a successful
+update. Preserve profile files and their backups.
 
-## License
+## Use Avatar Studio
 
-Project code: GNU LGPL version 3 (LGPL-3.0-only), see LICENSE and COPYING.
-Third-party graphical assets retain their separate licenses; see NOTICE.md and
-docs/THIRD_PARTY_ASSETS.md. Wurm client libraries in `libs/` are local dependencies
-and must not be committed or redistributed. Obtain matching libraries from your
-own licensed client installation; consult the Gradle library list.
+**Body** edits preview immediately. **Save body** writes the selected appearance;
+**Revert body** restores the last saved profile. **Avatar on/off** switches between
+Avatar and the original character model.
+
+**Lab** provides temporary appearance and animation trials. **Reset test** or
+**Lab off** returns to the applied Body profile. Saving from Lab keeps its chosen
+appearance while animation trials remain temporary. **Open Lab** opens the optional
+local browser interface; it runs only when enabled. See the [Lab guide](docs/ANIMATION_LAB.md).
+
+## Settings and language
+
+The embedded **Chamomilo updater 1.5.0** provides a shared mod list and settings
+window. Select **Settings** on the Avatar 2.0 card:
+
+| Setting | Applies |
+| --- | --- |
+| Show Avatar Studio | Immediately; also controls visibility when the HUD is created |
+| Avatar profile file | After restarting the client |
+| Avatar resource pack | After restarting the client |
+| Diagnostic logging | Immediately, subject to the client's log-handler level |
+
+Changes save automatically to `~/.chamomilo/mod-settings/avatar2.properties`.
+Only edited values are stored. Leave the resource-pack setting at its release
+default to follow future upgrades. Changing the profile path does not move an
+existing profile file.
+
+Choose **English, Brazilian Portuguese, German or Russian** in the updater's
+shared language selector. Avatar Studio follows that selection. Appearance sliders
+and presets remain in Avatar Studio.
+
+## Scope and compatibility
+
+Avatar changes the local character and its portraits on your client. It does not
+synchronize appearance with other players or change server movement, skills or
+collision. Armour fitting is still in development. Other mods replacing the same
+player model or animation hooks may conflict.
+
+First-person and nearby free-look views hide the local head, eyes and hair to
+avoid showing their interior. This visibility handling does not prevent a free
+camera from passing through the model.
+
+## Build and licenses
+
+[Build instructions](docs/BUILDING.md) · [Third-party assets](docs/THIRD_PARTY_ASSETS.md) · [Changelog](CHANGELOG.md)
+
+Project code: **LGPL-3.0-only**. Body, skin and motion sources have their own
+licenses, including CC0 assets from MakeHuman and Quaternius. The embedded
+Chamomilo UI fonts use **SIL OFL 1.1**. License notices are included inside the
+runtime JARs. Native Wurm assets and proprietary client libraries are not shipped.

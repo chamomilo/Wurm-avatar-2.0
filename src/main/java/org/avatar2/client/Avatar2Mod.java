@@ -17,6 +17,7 @@ import org.gotti.wurmunlimited.modloader.interfaces.WurmClientMod;
 import org.gotti.wurmunlimited.modloader.interfaces.ModListener;
 import org.gotti.wurmunlimited.modloader.interfaces.ModEntry;
 import org.chamomilo.wurm.update.SharedUpdateCoordinator;
+import org.chamomilo.wurm.update.SharedUpdateHooks;
 import org.gotti.wurmunlimited.modsupport.console.ConsoleListener;
 import org.gotti.wurmunlimited.modsupport.console.ModConsole;
 
@@ -30,8 +31,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class Avatar2Mod implements WurmClientMod, Configurable,
-        PreInitable, Initable, ConsoleListener, ModListener {
-    public static final String VERSION = "0.2.0";
+        PreInitable, Initable, ConsoleListener, ModListener, org.chamomilo.wurm.update.SharedLanguageCoordinator.Participant {
+    public static final String VERSION = "0.15.2";
+    private static volatile String studioLanguage = "en";
+    public String[] supportedLanguageCodes() { return new String[]{"en","pt-BR","de","ru"}; }
+    public void setUserLanguage(String code) {
+        if(java.util.Arrays.asList(supportedLanguageCodes()).contains(code))studioLanguage=code;
+    }
+    public static String studioLanguage() { return studioLanguage; }
     private static final Logger LOG = Logger.getLogger("Avatar2");
     private static final Queue<Runnable> DEFERRED_UI =
             new ConcurrentLinkedQueue<Runnable>();
@@ -41,7 +48,6 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
     private AvatarStudioController controller;
     private AvatarStudioWindow window;
     private HudBridge bridge;
-    private final AvatarUpdateHost updateHost=new AvatarUpdateHost();
 
     public Avatar2Mod() { instance = this; }
 
@@ -49,12 +55,23 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
 
     @Override
     public void configure(Properties properties) {
-        AvatarStudioSettings.configure(properties);
+        AvatarStudioSettings.configure(org.chamomilo.wurm.update.SharedModSettings.configure(
+                "avatar2", properties, AvatarStudioSettings.specs(), (key, values) -> {
+                    if (key.equals("panelVisible")) setStudioVisible(Boolean.parseBoolean(values.getProperty(key)));
+                    AvatarStudioSettings.configure(values);
+                }));
+    }
+
+    private void setStudioVisible(boolean visible) {
+        if (hud == null || window == null || bridge == null) return;
+        try { bridge.setVisible(hud, window, visible); }
+        catch (ReflectiveOperationException error) { throw new IllegalStateException("Could not change Avatar Studio visibility", error); }
     }
 
     @Override
     public void preInit() {
         try {
+            SharedUpdateHooks.install();
             ClientHooks.install();
             LOG.info("Avatar 2.0 client hooks installed");
         } catch (Exception error) {
@@ -65,7 +82,7 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
     @Override
     public void init() {
         ModConsole.addConsoleListener(this);
-        SharedUpdateCoordinator.registerHost("avatar2",updateHost);
+        SharedUpdateHooks.registerHost("avatar2");
     }
 
     @Override public void modInitialized(ModEntry<?> entry) {
@@ -76,7 +93,6 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
         Avatar2Mod mod = instance;
         if (mod != null) {
             mod.attach(hud);
-            if(hud!=null)mod.updateHost.hudReady(hud);
         }
     }
 
@@ -131,6 +147,8 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
         try {
             boolean world = bakeAvatarWrapper(body.getModelWrapper(), "world");
             ModelResourceWrapper paperDoll = body.getPaperDollModel();
+            if (isAvatarWrapper(paperDoll)) org.avatar2.lab.AnimationLab.registerPaperModel(
+                    ((ColladaModelData)paperDoll.getModelData()).getModel());
             boolean paper = paperDoll == null || !isAvatarWrapper(paperDoll)
                     || bakeAvatarWrapper(paperDoll, "paper doll");
             if (!world || !paper) {
@@ -141,6 +159,16 @@ public final class Avatar2Mod implements WurmClientMod, Configurable,
         }
         // Never fall through to the segmented vanilla face baker for this model.
         return true;
+    }
+
+    static boolean prepareAvatarPaperDoll(ModelResourceWrapper wrapper) {
+        if(!isAvatarWrapper(wrapper))return false;
+        ColladaModelData data=(ColladaModelData)wrapper.getModelData();
+        // An asynchronous copy can be loaded before both diffuse textures arrive.
+        // Wait without clearing its existing baked output or logging every tick.
+        for(TriangleMesh mesh:avatarSourceMeshes(data))if(mesh.getColladaMaterial()==null
+                || data.getLoadedTextures().get(mesh.getColladaMaterial())==null&&mesh.getOverridedTexture()==null)return false;
+        return bakeAvatarWrapper(wrapper,"paper doll");
     }
 
     private static boolean bakeAvatarWrapper(ModelResourceWrapper wrapper,

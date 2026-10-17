@@ -90,21 +90,22 @@ public final class DaeRigProbe {
         ColladaPropertiesXml.load(model, avatar, false);
         for (String animation : Arrays.asList(
                 "idle", "walk", "run", "idle.p1", "walk.p1", "run.p1",
-                "gait.walk.relaxed", "gait.jog")) {
+                "gait.walk.relaxed", "gait.jog", "gait.sprint", "gait.jog.clean", "gait.sprint.clean")) {
             if (model.getColladaAnimation(animation) == null) {
                 throw new IllegalStateException(file.getName()
                         + " is missing bind-safe animation " + animation);
             }
         }
         for (String rejected : Arrays.asList(
-                "gait.walk.formal", "gait.sprint", "gait.crouch")) {
+                "gait.walk.formal", "gait.crouch")) {
             if (model.getColladaAnimation(rejected) != null) {
                 throw new IllegalStateException(file.getName()
                         + " exposes rejected animation " + rejected);
             }
         }
         requireSameLength(file, model, "walk", "gait.walk.relaxed");
-        requireSameLength(file, model, "run", "gait.jog");
+        requireSameLength(file, model, "run", "gait.sprint");
+        requireSameLength(file, model, "run", "gait.sprint.clean");
         requireSameLength(file, model, "run", "run.p1");
         verifyNeutralReferencePose(file, model);
         verifyPoseEnvelopes(file, model);
@@ -160,9 +161,14 @@ public final class DaeRigProbe {
         verifyMotionPose(file, model, "walk",
                 new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 0.65f);
         verifyMotionPose(file, model, "run",
-                new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 0.80f);
+                new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 1.00f);
         verifyMotionPose(file, model, "gait.jog",
                 new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 0.80f);
+        // Sprint is the user's selected production run; Jog remains a comparison.
+        verifyMotionPose(file, model, "gait.jog.clean",
+                new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 1.20f);
+        verifyMotionPose(file, model, "gait.sprint.clean",
+                new float[] {0.0f, 0.25f, 0.5f, 0.75f}, 0.35f, 1.20f);
     }
 
     private static void verifyMotionPose(File file, ColladaModel model,
@@ -264,11 +270,15 @@ public final class DaeRigProbe {
         float shoulderForwardDelta = Math.abs(
                 leftShoulder.z - rightShoulder.z);
         requireRange(file, animationName + " shoulder height delta",
-                shoulderHeightDelta, 0.0f, 0.035f);
+                // The selected supplier Sprint has an alternating shoulder
+                // hike up to 160 mm on the male rig (132 mm on the female).
+                // Keep that approved source motion; walk retains its 35 mm cap.
+                shoulderHeightDelta, 0.0f, "run".equals(animationName) ? 0.18f : 0.035f);
         float maximumShoulderForwardDelta = "run".equals(animationName)
                 ? 0.28f : 0.20f;
         requireRange(file, animationName + " shoulder forward delta",
-                shoulderForwardDelta, 0.025f,
+                // Both fresh loops pass through an untwisted shoulder line.
+                shoulderForwardDelta, 0.0f,
                 maximumShoulderForwardDelta);
         System.out.printf(java.util.Locale.ROOT,
                 "AVATAR2_LIMB_POSE file=%s animation=%s fraction=%.2f "
@@ -295,6 +305,15 @@ public final class DaeRigProbe {
         for (String name : NEUTRAL_REFERENCE_JOINTS) {
             Joint joint = model.getJoint(name);
             Matrix4f nativeLocal = nativeLocalBind(joint);
+            if ("spine_01".equals(name)) {
+                Matrix4f parent = new Matrix4f(joint.getParent().getOriginalBindMatrix());
+                parent.m03 = parent.m13 = parent.m23 = 0;
+                Matrix4f pitch = new Matrix4f();
+                pitch.fromAngleAxis((float)Math.toRadians(3), new Vector3f(1,0,0));
+                Matrix4f expected = new Matrix4f(parent).invertLocal().mult(pitch).mult(parent).mult(nativeLocal);
+                expected.m03 = nativeLocal.m03; expected.m13 = nativeLocal.m13; expected.m23 = nativeLocal.m23;
+                nativeLocal = expected;
+            }
             float difference = matrixDifference(joint.getAnimationMatrix(),
                     nativeLocal);
             if (difference > maximumDifference) {

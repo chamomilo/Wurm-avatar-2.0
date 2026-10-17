@@ -15,8 +15,15 @@ final class LabServer implements AutoCloseable {
     private final HttpServer http;
     private final ExecutorService workers;
     private final String token,origin;
+    private final byte[] dashboard;
     private Path session;
     LabServer() throws IOException {
+        this(Paths.get("mods","avatar2","avatar2-"+org.avatar2.client.Avatar2Mod.VERSION+".jar"));
+    }
+    LabServer(Path installedJar) throws IOException {
+        // Fail at lab-on, not on the first browser request. The page is immutable
+        // for this session and has the same JAR fallback as other Wurm resources.
+        dashboard=LabPageResource.read(LabServer.class,installedJar);
         byte[] random=new byte[32];new SecureRandom().nextBytes(random);token=Base64.getUrlEncoder().withoutPadding().encodeToString(random);
         http=HttpServer.create(new InetSocketAddress("127.0.0.1",0),8);
         origin="http://127.0.0.1:"+http.getAddress().getPort();
@@ -41,10 +48,7 @@ final class LabServer implements AutoCloseable {
             if(!origin.substring(7).equals(host)||sentOrigin!=null&&!origin.equals(sentOrigin)){send(exchange,403,LabJson.map("error","Host/origin rejected"));return;}
             String path=exchange.getRequestURI().getPath(),method=exchange.getRequestMethod();
             if(path.equals("/")&&method.equals("GET")){
-                try(InputStream stream=LabServer.class.getResourceAsStream("dashboard.html")){
-                    if(stream==null)throw new IOException("Missing dashboard");ByteArrayOutputStream data=new ByteArrayOutputStream();byte[] b=new byte[4096];int n;while((n=stream.read(b))!=-1)data.write(b,0,n);
-                    sendBytes(exchange,200,"text/html; charset=utf-8",data.toByteArray());return;
-                }
+                sendBytes(exchange,200,"text/html; charset=utf-8",dashboard);return;
             }
             String auth=exchange.getRequestHeaders().getFirst("Authorization");
             if(auth==null||!MessageDigest.isEqual(("Bearer "+token).getBytes(StandardCharsets.UTF_8),auth.getBytes(StandardCharsets.UTF_8))){send(exchange,401,LabJson.map("error","Bearer token required"));return;}

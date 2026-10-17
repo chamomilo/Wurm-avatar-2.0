@@ -39,7 +39,9 @@ final class HudBridge {
         settings.setEnabled(window, visible);
         SavePosManager positions = ReflectionUtil.getPrivateField(hud, savePosManager);
         positions.registerAndRefresh(window, "avatar2.studio");
-        if (visible) ReflectionUtil.callPrivateMethod(hud, showComponent, window);
+        // SDK show also binds maximize/restore to this HUD, including hidden startup.
+        window.show(hud);
+        if (!visible) window.hide();
     }
 
     void add(HeadsUpDisplay hud, WurmComponent window) throws ReflectiveOperationException {
@@ -57,6 +59,15 @@ final class HudBridge {
             throws ReflectiveOperationException {
         if (hud != null && window != null)
             ReflectionUtil.callPrivateMethod(hud, hideComponent, window);
+    }
+
+    void setVisible(HeadsUpDisplay hud, AvatarStudioWindow window, boolean visible)
+            throws ReflectiveOperationException {
+        if (hud == null || window == null) return;
+        ReflectionUtil.callPrivateMethod(hud, visible ? showComponent : hideComponent, window);
+        HudSettings settings = ReflectionUtil.getPrivateField(hud, hudSettings);
+        settings.setEnabled(window, visible);
+        if (visible) window.show(hud); else window.hide();
     }
 
     void toggle(HeadsUpDisplay hud, AvatarStudioWindow window)

@@ -55,7 +55,13 @@ public final class AvatarAnimationBridge {
         int repairedWeights = normalizeSkinWeights(model);
 
         try {
+            AvatarGeometryPrototype.register(model, avatarUrl);
+            AvatarAgeSkin.register(model, avatarUrl);
             ColladaPropertiesXml.load(model, avatarUrl, false);
+            com.wurmonline.client.renderer.model.collada.animation.AvatarWalkMotion.register(model);
+            AvatarEquipmentSockets.register(model);
+            AvatarHair.register(model, !avatarUrl.getFilePath().contains("female-"));
+            AvatarFirstPerson.register(model);
             // Vanilla WOM matrices are never loaded into the native MakeHuman
             // hierarchy. Matching action names is only a gameplay-state contract.
             LOG.info("Attached bind-safe Avatar 2.0 locomotion to "

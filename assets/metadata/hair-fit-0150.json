@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "release": "0.15.0",
+  "source": "Locally installed Wurm Unlimited graphics.jar",
+  "redistributedArt": false,
+  "referenceHeadMeshes": [
+    "backpartMesh",
+    "upperFace0Mesh"
+  ],
+  "cranialMask": "Fixed Avatar bind vertex IDs above crown - 0.8 * (crown - head joint Y)",
+  "nativeHairIds": {
+    "male": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "female": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "maleSource": {
+    "headY": 1.511672,
+    "helmetY": 1.617755,
+    "helmetZ": -0.000366,
+    "crownY": 1.654048,
+    "x": [
+      -0.073027,
+      0.073027
+    ],
+    "z": [
+      -0.08103,
+      0.110983
+    ]
+  },
+  "femaleSource": {
+    "headY": 1.511672,
+    "helmetY": 1.617755,
+    "helmetZ": -0.000366,
+    "crownY": 1.653191,
+    "x": [
+      -0.070824,
+      0.070829
+    ],
+    "z": [
+      -0.073797,
+      0.11026
+    ]
+  },
+  "womSha256": {
+    "player/Male_1_04.wom": "6a9eddacce4cf40d750e25008d23d7e338a1eaa4b64c1fa69a42b231d8cfb50b",
+    "player/female_1_04.wom": "4c1be44b800a0562c3fbacf0703c34b7df52a0495859d925ac564fe02a7ad066",
+    "player/hair/male_hair01.wom": "c666951b39be428e66a57cc9e55a53350e1385bfc36333460a02ca97ef353801",
+    "player/hair/male_hair02.wom": "df4918d5b2183bbff23ccf4c42925fa8abd2440351e029c11f94c5e23db79810",
+    "player/hair/male_hair03.wom": "38bd479019967455c34691f2356b1416ff78085973bb47b3a96a146ccf654e6e",
+    "player/hair/male_hair04.wom": "c90d326c4196d1e7700e069edaf76d0646d802920db6f74bf9f8b142c1955c12",
+    "player/hair/male_hair05.wom": "4130f6e7690914d888515e9741c5cf6b93a728f04e82f63049a219bdc03bfcec",
+    "player/hair/femaleHair01.wom": "852edfffde036c66fa3e1c3fa2cac430f7f933a20a56cb68a34ed5188cafb8de",
+    "player/hair/femaleHair02.wom": "984641b81e41f85341496a5ad724b3ffd91fd073d50cd8086c8603fd0705ebae",
+    "player/hair/femaleHair03.wom": "a682306e6ef031f779e35b7de3cdfc6e7e970a43a3745958b60546c74192a89d",
+    "player/hair/femaleHair04.wom": "7253375bd3a49a5c1b0ceb79caa63440742ed437e709b511f95b601b7ba62b7d",
+    "player/hair/femaleHair05.wom": "497022fa21518e5a2ee225ed92e09122e7e6ef72b190667ca209753da871b39c",
+    "player/hair/femaleHair06.wom": "c302ecd54137a7a13ca113060cf7aae9ef40f2d0c7bb27de32d38d4455476c5a",
+    "player/hair/femaleHair07.wom": "6f19793e701d012d22ee82a088e735539efcf161c172e3a89a06136cc0a28c7a"
+  },
+  "runtimeReport": "hair-runtime.csv",
+  "nativeModelPoses": 5184,
+  "hairstylePlacements": 15552,
+  "visualStatus": "Installed evaluation pending",
+  "scalp": {
+    "source": "Avatar canonical cranial triangles with full head weight",
+    "clearanceMetres": 0.0008,
+    "frontCut": "crown - (crown - head Y) * (.95 - .60 * front**2)",
+    "opaqueUvByStyle": {
+      "male-1": [
+        0.8037109375,
+        0.8291015625
+      ],
+      "male-2": [
+        0.1025390625,
+        0.5908203125
+      ],
+      "male-3": [
+        0.1826171875,
+        0.5224609375
+      ],
+      "male-4": [
+        0.5185546875,
+        0.6259765625
+      ],
+      "male-5": [
+        0.5146484375,
+        0.5478515625
+      ],
+      "female-1": [
+        0.3349609375,
+        0.5048828125
+      ],
+      "female-2": [
+        0.7138671875,
+        0.8564453125
+      ],
+      "female-3": [
+        0.4580078125,
+        0.9052734375
+      ],
+      "female-4": [
+        0.3486328125,
+        0.8681640625
+      ],
+      "female-5": [
+        0.6572265625,
+        0.6240234375
+      ],
+      "female-6": [
+        0.6201171875,
+        0.6787109375
+      ],
+      "female-7": [
+        0.5439453125,
+        0.5693359375
+      ]
+    },
+    "textureSampling": "7x7 opaque neighbourhood in both DDS row orientations"
+  }
+}

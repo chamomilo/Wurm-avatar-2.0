@@ -1,0 +1,53 @@
+{
+  "version": "0.10.0",
+  "profileSchema": 4,
+  "grid": "bilinear Original + low muscle + full + low muscle/full",
+  "controls": {
+    "buildMuscle": [
+      0,
+      1
+    ],
+    "buildFat": [
+      0,
+      1
+    ],
+    "original": {
+      "buildMuscle": 1,
+      "buildFat": 0
+    }
+  },
+  "bodies": [
+    {
+      "body": "male-bodybuilder",
+      "bankSha256": "2c64e763d01d9c3e4cc0a892b7f442bf3b4175b43fc2e383e6d95257eee2cec6",
+      "preservedReleasedTargets": [
+        "mpfb-athletic",
+        "mpfb-heavy",
+        "mpfb-older"
+      ],
+      "rmsDisplacementMetres": {
+        "build-low-muscle": 0.007779890015431642,
+        "build-full": 0.008180963381163543,
+        "build-low-muscle-full": 0.010442430137190895
+      },
+      "rmsAuthoredInteractionMetres": 0.008240350945930142,
+      "eyesPositionDelta": 0
+    },
+    {
+      "body": "female-bodybuilder",
+      "bankSha256": "5dd8b235ebac0b1a8bbadc6791307d78284cfc49e16fd9889fad5f0cd9a12396",
+      "preservedReleasedTargets": [
+        "mpfb-athletic",
+        "mpfb-heavy",
+        "mpfb-older"
+      ],
+      "rmsDisplacementMetres": {
+        "build-low-muscle": 0.005634910617995309,
+        "build-full": 0.0067721677634583815,
+        "build-low-muscle-full": 0.007976533874610463
+      },
+      "rmsAuthoredInteractionMetres": 0.007168992216805425,
+      "eyesPositionDelta": 0
+    }
+  ]
+}
